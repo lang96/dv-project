@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Formula 1 Dashboard</title>
+    <style>
+        @font-face {
+            font-family: 'F1_Regular';
+            src: url('assets/fonts/Formula1-Regular_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Bold';
+            src: url('assets/fonts/Formula1-Bold_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Wide';
+            src: url('assets/fonts/Formula1-Wide_web_0.ttf') format('truetype');
+        }
+
+        body {
+            background-color: #f5f5f5;
+            font-family: 'F1_Regular', Arial, sans-serif;
+        }
+
+        #header {
+            background-color: #333;
+            font-family: 'F1_Wide', Arial, sans-serif;
+            color: red;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar {
+            width: 300px;
+            font-family: 'F1_Regular', Arial, sans-serif;
+            background-color: white;
+            color: red;
+            padding: 20px;
+        }
+
+        #content {
+            padding: 20px;
+        }
+
+        #footer {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div id="header">
+    <h1>Formula 1 Dashboard</h1>
+</div>
+
+<div id="container">
+    <div id="sidebar">
+        <h2>Menu</h2>
+        <ul>
+            <li><a href="viz.html">Max Verstappen is a crybaby</a></li>
+            <li><a href="#">Driver Standings</a></li>
+            <li><a href="#">Circuit Info</a></li>
+            <li><a href="#">Race Results</a></li>
+        </ul>
+    </div>
+
+    <div id="content">
+        <h2>Welcome to the Formula 1 Dashboard</h2>
+        <p>Select a menu option to view the desired information.</p>
+
+        <!-- Place your D3 visualizations or other content here -->
+
+    </div>
+</div>
+
+<div id="footer">
+    <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
+</div>
+</body>
+</html>
