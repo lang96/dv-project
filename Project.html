@@ -105,6 +105,20 @@
                 d3.select("#dropdown")
                     .on("change", function() {
                         const selectedValue = this.value;
+
+                        d3.csv("assets/data/drivers.csv").then(data => {
+
+                            const selectedDriverResults = data.filter(function(d) {
+                                return d.driverId === selectedDriverId;
+                            });
+
+                            // Process the selected driver's results
+                            // ...
+                            // Your code to handle and display the selected driver's results
+                        }).catch(error => {
+                            console.log("Error:", error);
+                        });
+
                         console.log("Selected Value:", selectedValue);
                         // Update the printed value
                         d3.select("#selectedValue")

@@ -3,6 +3,8 @@
 <head>
     <title>On The Inside</title>
     <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
     <style>
         @font-face {
             font-family: 'F1_Regular';
@@ -18,75 +20,83 @@
             font-family: 'F1_Wide';
             src: url('assets/fonts/Formula1-Wide_web_0.ttf') format('truetype');
         }
-
-        body {
-            background-color: #f5f5f5;
-            font-family: 'F1_Regular', Arial, sans-serif;
-        }
-
-        #header {
-            background-color: #333;
-            font-family: 'F1_Wide', Arial, sans-serif;
-            color: red;
-            padding: 20px;
-            text-align: center;
-        }
-
-        #container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        #sidebar {
-            width: 300px;
-            font-family: 'F1_Regular', Arial, sans-serif;
-            background-color: white;
-            color: red;
-            padding: 20px;
-        }
-
-        #content {
-            padding: 20px;
-        }
-
-        #footer {
-            background-color: #333;
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
 <div id="header">
-    <h1>On The Insidez - Dominance and Glory in Formula 1</h1>
+    <h1>On The Inside - Dominance and Glory in Formula 1</h1>
 </div>
 
-<div id="container">
-    <div id="sidebar">
-        <h2>Menu</h2>
-        <ul>
-            <li><a href="viz.html">Max Verstappen is a crybaby</a></li>
-            <li><a href="#">Driver Standings</a></li>
-            <li><a href="#">Circuit Info</a></li>
-            <li><a href="#">Race Results</a></li>
-        </ul>
-    </div>
+<div id="content">
+    <h2>Welcome to the Formula 1 Dashboard</h2>
+    <p>Select a menu option to view the desired information.</p>
 
-    <div id="content">
-        <h2>Welcome to the Formula 1 Dashboard</h2>
-        <p>Select a menu option to view the desired information.</p>
+    <!-- Place your D3 visualizations or other content here -->
 
-        <!-- Place your D3 visualizations or other content here -->
-
-    </div>
 </div>
 
 <div id="footer">
     <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
 </div>
+
+<script>
+    const csvData = {}; // Object to hold the CSV data
+
+    // Function to handle parsed CSV data
+    function handleCSVData(filename, results) {
+        csvData[filename] = results.data; // Store the parsed data in the object
+    }
+
+    // Read and parse multiple CSV files
+    const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv"]; // Replace with your file names
+
+    files.forEach(function(file) {
+        console.log(file.split('/').pop());
+        const filename = file.split('/').pop();
+        Papa.parse(file, {
+            header: true,
+            dynamicTyping: true,
+            delimiter: ",",
+            complete: function(results) {
+                console.log(results);
+                handleCSVData(filename, results);
+            }
+        });
+    });
+
+    // Function to print driver and their corresponding results
+    function printDriverResults(driverId) {
+        // Find the driver data based on driver ID
+        const driverData = csvData["drivers.csv"].find(function(driver) {
+            return driver.driverId === driverId;
+        });
+
+        // Find the results data for the driver ID
+        const driverResults = csvData["results.csv"].filter(function(result) {
+            return result.driverId === driverId;
+        });
+
+        // Print driver details
+        console.log("Driver ID:", driverData.driverId);
+        console.log("Driver Name:", driverData.forename + " " + driverData.surname);
+        console.log("Driver Nationality:", driverData.nationality);
+        // Print other driver details as needed
+
+        // Print corresponding results for the driver
+        console.log("Driver Results:");
+        driverResults.forEach(function(result) {
+            console.log("Race ID:", result.raceId);
+            console.log("Grid Position:", result.grid);
+            console.log("Final Position:", result.position);
+            console.log("Race Points:", result.points);
+            // Print other result details as needed
+        });
+    }
+
+    // Call the function to print results for a specific driver ID
+    const desiredDriverId = 1; // Replace with the desired driver ID
+    printDriverResults(desiredDriverId);
+</script>
+
 </body>
 </html>
