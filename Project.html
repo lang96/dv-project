@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Formula 1 Dashboard</title>
+    <style>
+        @font-face {
+            font-family: 'F1_Regular';
+            src: url('assets/fonts/Formula1-Regular_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Bold';
+            src: url('assets/fonts/Formula1-Bold_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Wide';
+            src: url('assets/fonts/Formula1-Wide_web_0.ttf') format('truetype');
+        }
+
+        body {
+            background-color: #f5f5f5;
+            font-family: 'F1_Regular', Arial, sans-serif;
+        }
+
+        #header {
+            background-color: #333;
+            font-family: 'F1_Wide', Arial, sans-serif;
+            color: red;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar {
+            width: 300px;
+            font-family: 'F1_Regular', Arial, sans-serif;
+            background-color: white;
+            color: red;
+            padding: 20px;
+        }
+
+        #content {
+            padding: 20px;
+        }
+
+        #footer {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+<div id="header">
+
+    <h1>Formula 1 Dashboard</h1>
+</div>
+
+<div id="container">
+    <div id="sidebar">
+
+        <h2>Menu</h2>
+        <ul>
+            <li><a href="Map.html">Max Verstappen is a crybaby</a></li>
+            <li><a href="#">Driver Standings</a></li>
+            <li><a href="#">Circuit Info</a></li>
+            <li><a href="#">Race Results</a></li>
+        </ul>
+    </div>
+
+    <div id="content">
+        <h2>Welcome to the Formula 1 Dashboard</h2>
+        <p>Select a menu option to view the desired information.</p>
+
+        <!-- Place your D3 visualizations or other content here -->
+        <select id="dropdown"></select>
+
+        <div id="selectedValue"></div>
+
+        <script>
+            // Read the CSV file
+            d3.csv("assets/data/drivers.csv").then(data => {
+                // Extract the unique values from the "driverRef" column
+                const columnValues = Array.from(new Set(data.map(d => d.driverRef)));
+
+                // Populate the dropdown with options
+                d3.select("#dropdown")
+                    .selectAll("option")
+                    .data(columnValues)
+                    .enter()
+                    .append("option")
+                    .text(d => d);
+
+                // Event handler for dropdown selection change
+                d3.select("#dropdown")
+                    .on("change", function() {
+                        const selectedValue = this.value;
+                        console.log("Selected Value:", selectedValue);
+                        // Update the printed value
+                        d3.select("#selectedValue")
+                            .text("Pemenangnya adalah: " + selectedValue);
+                    });
+            }).catch(error => {
+                console.log("Error:", error);
+            });
+        </script>
+
+        <script>
+            // Define your data (replace placeholders with actual data)
+            const data = [
+                { country: "Germany", wins: 10 },
+                { country: "Spain", wins: 5 },
+                { country: "Netherlands", wins: 8 },
+                // Add more data for other countries...
+            ];
+
+            // Define the dimensions of the SVG container
+            const width = 960;
+            const height = 600;
+
+            // Create an SVG container
+            const svg = d3.select("#content")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // Define the projection for the map (you can choose a different one if desired)
+            const projection = d3.geoMercator()
+                .scale(130)
+                .translate([width / 2, height / 1.4]);
+
+            // Create a path generator
+            const path = d3.geoPath().projection(projection);
+
+            // Load the map data (replace "countries.geojson" with the path to your map data file)
+            d3.json("assets/data/countries.geojson").then(function(mapData) {
+                // Draw the map
+                svg.selectAll("path")
+                    .data(mapData.features)
+                    .enter()
+                    .append("path")
+                    .attr("d", path)
+                    .attr("fill", function(d) {
+                        // Lookup the number of wins for the current country (replace "wins" with the actual attribute name in your data)
+                        const countryData = data.find(country => country.country === d.properties.ADMIN);
+                        if (countryData) {
+                            // Replace the color based on the number of wins (you can choose your own color scale)
+                            return d3.interpolateBlues(countryData.wins / 10); // Adjust the scale to fit your actual data range
+                        } else {
+                            return "#ccc"; // Default color for countries without data
+                        }
+                    });
+            });
+        </script>
+
+    </div>
+</div>
+
+<div id="footer">
+    <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
+</div>
+</body>
+</html>
