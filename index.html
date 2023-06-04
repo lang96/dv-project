@@ -51,21 +51,33 @@
     const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv"]; // Replace with your file names
 
     files.forEach(function(file) {
-        console.log(file.split('/').pop());
         const filename = file.split('/').pop();
-        Papa.parse(file, {
-            header: true,
-            dynamicTyping: true,
-            delimiter: ",",
-            complete: function(results) {
-                console.log(results);
-                handleCSVData(filename, results);
-            }
-        });
+        fetch(file)
+            .then(response => response.text())
+            .then(csvContent => {
+                Papa.parse(csvContent, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        // Handle the parsed data for each file
+                        handleCSVData(filename, results);
+                    },
+                    error: function(error) {
+                        console.error("Error parsing file:", file);
+                        console.error(error);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error loading CSV file:", file);
+                console.error(error);
+            });
     });
 
     // Function to print driver and their corresponding results
     function printDriverResults(driverId) {
+        console.log("test"); // try to access each element of csvData
+
         // Find the driver data based on driver ID
         const driverData = csvData["drivers.csv"].find(function(driver) {
             return driver.driverId === driverId;
