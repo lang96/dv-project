@@ -5,6 +5,8 @@
     <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
     <style>
         @font-face {
             font-family: 'F1_Regular';
@@ -20,35 +22,107 @@
             font-family: 'F1_Wide';
             src: url('assets/fonts/Formula1-Wide_web_0.ttf') format('truetype');
         }
+
+        #butterflyChart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
 <div id="header">
     <h1>On The Inside - Dominance and Glory in Formula 1</h1>
 </div>
-
 <div id="content">
     <h2>Welcome to the Formula 1 Dashboard</h2>
     <p>Select a menu option to view the desired information.</p>
 
-    <!-- Place your D3 visualizations or other content here -->
-
+    <div>
+        <select id="driverSelect1">
+            <option value="">Select driver 1</option>
+        </select>
+        <select id="driverSelect2">
+            <option value="">Select driver 2</option>
+        </select>
+    </div>
 </div>
+
+<div id="butterflyChart"></div>
+
+<div id="chart"></div>
 
 <div id="footer">
     <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
 </div>
 
 <script>
-    const csvData = {}; // Object to hold the CSV data
+    let csvData = {}; // Object to hold the CSV data
 
     // Function to handle parsed CSV data
     function handleCSVData(filename, results) {
         csvData[filename] = results.data; // Store the parsed data in the object
+        console.log(csvData); // Verify the data is stored correctly
+
+        // Check if all CSV files are loaded and populate the driver dropdowns
+        if (filename === "drivers.csv") {
+            populateDriverDropdown();
+        }
     }
 
     // Read and parse multiple CSV files
-    const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv"]; // Replace with your file names
+    const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv", "assets/data/driver_standings.csv" , "assets/data/qualifying.csv"];
+    let fileCount = 0;
+
+    // Function to populate the driver dropdowns
+    function populateDriverDropdown() {
+        const driverData = csvData["drivers.csv"];
+
+        const driverSelect1 = document.getElementById("driverSelect1");
+        const driverSelect2 = document.getElementById("driverSelect2");
+
+        driverData.sort(function(a, b) {
+            // Sort the driverData array based on the first letter of the driver's name
+            const nameA = a.forename.charAt(0).toUpperCase();
+            const nameB = b.forename.charAt(0).toUpperCase();
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameA > nameB) {
+                return 1;
+            }
+            return 0;
+        });
+
+        driverSelect1.addEventListener("change", function() {
+            const selectedDriver1 = driverSelect1.value;
+            if (selectedDriver1) {
+                const desiredDriverId1 = parseInt(selectedDriver1);
+                printDriverResults(desiredDriverId1, "raceCount1");
+                updateBarChart(desiredDriverId1, "barChart1");
+            }
+        });
+
+        driverSelect2.addEventListener("change", function() {
+            const selectedDriver2 = driverSelect2.value;
+            if (selectedDriver2) {
+                const desiredDriverId2 = parseInt(selectedDriver2);
+                printDriverResults(desiredDriverId2, "raceCount2");
+                updateBarChart(desiredDriverId2, "barChart2");
+            }
+        });
+
+        driverData.forEach(function(driver) {
+            const option1 = document.createElement("option");
+            const option2 = document.createElement("option");
+            option1.value = driver.driverId;
+            option1.text = driver.forename + " " + driver.surname;
+            option2.value = driver.driverId;
+            option2.text = driver.forename + " " + driver.surname;
+            driverSelect1.appendChild(option1);
+            driverSelect2.appendChild(option2);
+        });
+    }
 
     files.forEach(function(file) {
         const filename = file.split('/').pop();
@@ -61,6 +135,12 @@
                     complete: function(results) {
                         // Handle the parsed data for each file
                         handleCSVData(filename, results);
+                        fileCount++;
+
+                        // Check if all CSV files are loaded and call the function to print driver results
+                        if (fileCount === files.length) {
+                            updateBarChart();
+                        }
                     },
                     error: function(error) {
                         console.error("Error parsing file:", file);
@@ -74,41 +154,448 @@
             });
     });
 
-    // Function to print driver and their corresponding results
-    function printDriverResults(driverId) {
-        console.log("test"); // try to access each element of csvData
+    // Function to update the butterfly chart
+    function updateButterflyChart(driverId1, driverId2, chartContainerId) {
+        const driverData = csvData["drivers.csv"];
+        const driverResultsData = csvData["results.csv"];
+        const qualifyingData = csvData["qualifying.csv"];
 
-        // Find the driver data based on driver ID
-        const driverData = csvData["drivers.csv"].find(function(driver) {
-            return driver.driverId === driverId;
+        const driver1 = driverData.find(function (driver) {
+            return driver.driverId === driverId1;
         });
 
-        // Find the results data for the driver ID
-        const driverResults = csvData["results.csv"].filter(function(result) {
-            return result.driverId === driverId;
+        const driver2 = driverData.find(function (driver) {
+            return driver.driverId === driverId2;
         });
 
-        // Print driver details
-        console.log("Driver ID:", driverData.driverId);
-        console.log("Driver Name:", driverData.forename + " " + driverData.surname);
-        console.log("Driver Nationality:", driverData.nationality);
-        // Print other driver details as needed
-
-        // Print corresponding results for the driver
-        console.log("Driver Results:");
-        driverResults.forEach(function(result) {
-            console.log("Race ID:", result.raceId);
-            console.log("Grid Position:", result.grid);
-            console.log("Final Position:", result.position);
-            console.log("Race Points:", result.points);
-            // Print other result details as needed
+        const driver1Results = driverResultsData.filter(function (result) {
+            return result.driverId === driverId1;
         });
+
+        const driver2Results = driverResultsData.filter(function (result) {
+            return result.driverId === driverId2;
+        });
+
+        const driver1RaceCount = driver1Results.length;
+        const driver2RaceCount = driver2Results.length;
+
+        const driver1Wins = driverResultsData.filter(function (result) {
+            return result.driverId === driverId1 && result.position === 1;
+        }).length;
+
+        const driver2Wins = driverResultsData.filter(function (result) {
+            return result.driverId === driverId2 && result.position === 1;
+        }).length;
+
+        const driver1Podiums = driverResultsData.filter(function (result) {
+            return result.driverId === driverId1 && result.position <= 3;
+        }).length;
+
+        const driver2Podiums = driverResultsData.filter(function (result) {
+            return result.driverId === driverId2 && result.position <= 3;
+        }).length;
+
+        const driver1Poles = qualifyingData.filter(function (result) {
+            return result.driverId === driverId1 && result.position === 1;
+        }).length;
+
+        const driver2Poles = qualifyingData.filter(function (result) {
+            return result.driverId === driverId2 && result.position === 1;
+        }).length;
+
+        const chartContainer = document.getElementById(chartContainerId);
+        chartContainer.innerHTML = "";
+
+        const svg = d3.select("#" + chartContainerId)
+            .append("svg")
+            .attr("width", 400)
+            .attr("height", 300);
+
+        const maxRaceCount = Math.max(driver1RaceCount, driver2RaceCount);
+        const barWidthScale = d3.scaleLinear()
+            .domain([0, maxRaceCount])
+            .range([0, 150]);
+
+        // Driver 1 bar
+        svg.append("rect")
+            .attr("x", 100 - barWidthScale(driver1RaceCount))
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1RaceCount));
+
+        svg.append("rect")
+            .attr("x", 100 - barWidthScale(driver1Wins))
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Wins));
+
+        svg.append("rect")
+            .attr("x", 100 - barWidthScale(driver1Podiums))
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Podiums));
+
+        svg.append("rect")
+            .attr("x", 100 - barWidthScale(driver1Poles))
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Poles));
+
+        // Driver 2 bar
+        svg.append("rect")
+            .attr("x", 250)
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2RaceCount));
+
+        svg.append("rect")
+            .attr("x", 250)
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Wins));
+
+        svg.append("rect")
+            .attr("x", 250)
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Podiums));
+
+        svg.append("rect")
+            .attr("x", 250)
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Poles));
+
+        // Driver 1 text
+        svg.append("text")
+            .attr("x", 100 - barWidthScale(driver1RaceCount) / 2)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver1RaceCount)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 100 - barWidthScale(driver1Wins) / 2)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver1Wins)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 100 - barWidthScale(driver1Podiums) / 2)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver1Podiums)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 100 - barWidthScale(driver1Poles) / 2)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver1Poles)
+            .style("fill", "#fff");
+
+        // Driver 2 text
+        svg.append("text")
+            .attr("x", 250 + barWidthScale(driver2RaceCount) / 2)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver2RaceCount)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 250 + barWidthScale(driver2Wins) / 2)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver2Wins)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 250 + barWidthScale(driver2Podiums) / 2)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver2Podiums)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 250 + barWidthScale(driver2Poles) / 2)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver2Poles)
+            .style("fill", "#fff");
+
+        svg.append("text")
+            .attr("x", 175)
+            .attr("y", 60)
+            .attr("text-anchor", "middle")
+            .text("Races")
+            .style("fill", "#000");
+
+        svg.append("text")
+            .attr("x", 175)
+            .attr("y", 110)
+            .attr("text-anchor", "middle")
+            .text("Wins")
+            .style("fill", "#000");
+
+        svg.append("text")
+            .attr("x", 175)
+            .attr("y", 170)
+            .attr("text-anchor", "middle")
+            .text("Podiums")
+            .style("fill", "#000");
+
+        svg.append("text")
+            .attr("x", 175)
+            .attr("y", 230)
+            .attr("text-anchor", "middle")
+            .text("Poles")
+            .style("fill", "#000");
     }
 
-    // Call the function to print results for a specific driver ID
-    const desiredDriverId = 1; // Replace with the desired driver ID
-    printDriverResults(desiredDriverId);
+    driverSelect1.addEventListener("change", function () {
+        const selectedDriver1 = driverSelect1.value;
+        const selectedDriver2 = driverSelect2.value;
+
+        if (selectedDriver1 && selectedDriver2) {
+            const desiredDriverId1 = parseInt(selectedDriver1);
+            const desiredDriverId2 = parseInt(selectedDriver2);
+
+            updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
+        }
+    });
+
+    driverSelect2.addEventListener("change", function () {
+        const selectedDriver1 = driverSelect1.value;
+        const selectedDriver2 = driverSelect2.value;
+
+        if (selectedDriver1 && selectedDriver2) {
+            const desiredDriverId1 = parseInt(selectedDriver1);
+            const desiredDriverId2 = parseInt(selectedDriver2);
+
+            updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
+        }
+    });
+
 </script>
 
+<script>
+    // Load the CSV data using PapaParse
+    Papa.parse("assets/data/drivers.csv", {
+        header: true,
+        download: true,
+        complete: function (driversData) {
+            // Store the drivers data in an object for easy access
+            const drivers = driversData.data.reduce((acc, driver) => {
+                acc[driver.driverId] = driver.forename + " " + driver.surname;
+                return acc;
+            }, {});
+
+            // Get the driver IDs
+            const driverIds = Object.keys(drivers);
+
+            // Sort driver options based on the first letter of the driver's name
+            driverIds.sort(function(a, b) {
+                const nameA = drivers[a].charAt(0).toUpperCase();
+                const nameB = drivers[b].charAt(0).toUpperCase();
+                if (nameA < nameB) {
+                    return -1;
+                }
+                if (nameA > nameB) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            // Populate the dropdown menus with driver options
+            const driverSelect1 = document.getElementById("driverSelect1");
+            const driverSelect2 = document.getElementById("driverSelect2");
+
+            driverIds.forEach((driverId) => {
+                const option1 = document.createElement("option");
+                option1.value = driverId;
+                option1.textContent = drivers[driverId];
+                driverSelect1.appendChild(option1);
+
+                const option2 = document.createElement("option");
+                option2.value = driverId;
+                option2.textContent = drivers[driverId];
+                driverSelect2.appendChild(option2);
+            });
+
+            // Load the race data
+            Papa.parse("assets/data/races.csv", {
+                header: true,
+                download: true,
+                complete: function (racesData) {
+                    // Store the races data in an object for easy access
+                    const races = racesData.data.reduce((acc, race) => {
+                        acc[race.raceId] = race.year;
+                        return acc;
+                    }, {});
+
+                    // Load the result data
+                    Papa.parse("assets/data/results.csv", {
+                        header: true,
+                        download: true,
+                        complete: function (resultsData) {
+                            // Function to get points scored by year for a driver
+                            function getPointsByYear(driverId) {
+                                const driverPointsByYear = {};
+
+                                // Filter results based on driver ID
+                                const driverResults = resultsData.data.filter(
+                                    (result) => result.driverId === driverId
+                                );
+
+                                // Calculate points scored by year
+                                driverResults.forEach((result) => {
+                                    const raceYear = races[result.raceId];
+                                    const points = parseInt(result.points);
+
+                                    if (driverPointsByYear[raceYear]) {
+                                        driverPointsByYear[raceYear] += points;
+                                    } else {
+                                        driverPointsByYear[raceYear] = points;
+                                    }
+                                });
+
+                                return driverPointsByYear;
+                            }
+
+                            // Set up dimensions
+                            const width = 500;
+                            const height = 300;
+                            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+                            const innerWidth = width - margin.left - margin.right;
+                            const innerHeight = height - margin.top - margin.bottom;
+
+                            // Create SVG element
+                            const svg = d3
+                                .select("#chart")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .append("g")
+                                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+                            // Set up scales
+                            const xScale = d3.scaleBand().range([0, innerWidth]).padding(0.1);
+                            const yScale = d3.scaleLinear().range([innerHeight, 0]);
+
+                            // Define the line
+                            const line = d3
+                                .line()
+                                .x((d) => xScale(d.year) + xScale.bandwidth() / 2)
+                                .y((d) => yScale(d.points));
+
+                            // Add x-axis
+                            svg
+                                .append("g")
+                                .attr("class", "x-axis")
+                                .attr("transform", `translate(0, ${innerHeight})`);
+
+                            // Add y-axis
+                            svg.append("g").attr("class", "y-axis");
+
+                            // Function to update the chart based on selected drivers
+                            function updateChart() {
+                                const driverId1 = driverSelect1.value;
+                                const driverId2 = driverSelect2.value;
+
+                                const driver1PointsByYear = getPointsByYear(driverId1);
+                                const driver2PointsByYear = getPointsByYear(driverId2);
+
+                                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                                    year: year,
+                                    points: driver1PointsByYear[year],
+                                }));
+
+                                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                                    year: year,
+                                    points: driver2PointsByYear[year],
+                                }));
+
+                                const data = driver1Data.concat(driver2Data);
+
+                                // Sort the data by year in ascending order
+                                data.sort((a, b) => a.year - b.year);
+
+                                // Update x-scale domain
+                                xScale.domain(data.map((d) => d.year));
+
+                                // Update y-scale domain
+                                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                                // Update x-axis
+                                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                                // Update y-axis
+                                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                                // Remove any existing lines
+                                svg.selectAll(".line").remove();
+
+                                // Add the line for driver 1
+                                svg
+                                    .append("path")
+                                    .datum(driver1Data)
+                                    .attr("class", "line line1")
+                                    .attr("fill", "none")
+                                    .attr("stroke", "#377eb8")
+                                    .attr("stroke-width", 2)
+                                    .attr("d", line);
+
+                                // Add the line for driver 2
+                                svg
+                                    .append("path")
+                                    .datum(driver2Data)
+                                    .attr("class", "line line2")
+                                    .attr("fill", "none")
+                                    .attr("stroke", "#e41a1c")
+                                    .attr("stroke-width", 2)
+                                    .attr("d", line);
+                            }
+
+                            // Listen for change in driver selection
+                            const driverSelect1 = document.getElementById("driverSelect1");
+                            const driverSelect2 = document.getElementById("driverSelect2");
+
+                            driverSelect1.addEventListener("change", updateChart);
+                            driverSelect2.addEventListener("change", updateChart);
+
+                            // Initialize the chart with default drivers
+                            updateChart();
+                        },
+                    });
+                },
+            });
+        },
+    });
+</script>
 </body>
 </html>
