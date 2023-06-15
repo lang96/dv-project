@@ -28,6 +28,13 @@
             justify-content: center;
             align-items: center;
         }
+
+        /*#chart {*/
+        /*    display: flex;*/
+        /*    justify-content: center;*/
+        /*    align-items: center;*/
+        /*}*/
+
     </style>
 </head>
 <body>
@@ -36,7 +43,7 @@
 </div>
 <div id="content">
     <h2>Welcome to the Formula 1 Dashboard</h2>
-    <p>Select a menu option to view the desired information.</p>
+    <p>Select your desired driver to compare.</p>
 
     <div>
         <select id="driverSelect1">
@@ -48,9 +55,19 @@
     </div>
 </div>
 
-<div id="butterflyChart"></div>
+<div id="Title">
+    <h2><span style="margin-left: 830px;">Driver Comparison</span> </h2>
+</div>
 
-<div id="chart"></div>
+<div id="butterflyChart">
+</div>
+
+<div id="chart">
+<!--    <h2>Points Scored by Season</h2>-->
+    <h2><span style="margin-left: 120px;">Points Scored by Season</span> <span style="margin-left: 180px;">Most Fastest Laps</span></h2>
+
+</div>
+
 
 <div id="footer">
     <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
@@ -156,6 +173,7 @@
 
     // Function to update the butterfly chart
     function updateButterflyChart(driverId1, driverId2, chartContainerId) {
+
         const driverData = csvData["drivers.csv"];
         const driverResultsData = csvData["results.csv"];
         const qualifyingData = csvData["qualifying.csv"];
@@ -403,7 +421,9 @@
 
 </script>
 
+<!--Script for Point Scored by a Season-->
 <script>
+
     // Load the CSV data using PapaParse
     Papa.parse("assets/data/drivers.csv", {
         header: true,
@@ -415,37 +435,6 @@
                 return acc;
             }, {});
 
-            // Get the driver IDs
-            const driverIds = Object.keys(drivers);
-
-            // Sort driver options based on the first letter of the driver's name
-            driverIds.sort(function(a, b) {
-                const nameA = drivers[a].charAt(0).toUpperCase();
-                const nameB = drivers[b].charAt(0).toUpperCase();
-                if (nameA < nameB) {
-                    return -1;
-                }
-                if (nameA > nameB) {
-                    return 1;
-                }
-                return 0;
-            });
-
-            // Populate the dropdown menus with driver options
-            const driverSelect1 = document.getElementById("driverSelect1");
-            const driverSelect2 = document.getElementById("driverSelect2");
-
-            driverIds.forEach((driverId) => {
-                const option1 = document.createElement("option");
-                option1.value = driverId;
-                option1.textContent = drivers[driverId];
-                driverSelect1.appendChild(option1);
-
-                const option2 = document.createElement("option");
-                option2.value = driverId;
-                option2.textContent = drivers[driverId];
-                driverSelect2.appendChild(option2);
-            });
 
             // Load the race data
             Papa.parse("assets/data/races.csv", {
@@ -561,26 +550,37 @@
                                 svg.selectAll(".line").remove();
 
                                 // Add the line for driver 1
-                                svg
-                                    .append("path")
+                                svg.append("path")
                                     .datum(driver1Data)
                                     .attr("class", "line line1")
                                     .attr("fill", "none")
                                     .attr("stroke", "#377eb8")
                                     .attr("stroke-width", 2)
-                                    .attr("d", line);
+                                    .attr("d", line)
+                                    .call(animateLine);
 
-                                // Add the line for driver 2
-                                svg
-                                    .append("path")
+                                // Add the line for driver 2 with line drawing animation
+                                svg.append("path")
                                     .datum(driver2Data)
                                     .attr("class", "line line2")
                                     .attr("fill", "none")
                                     .attr("stroke", "#e41a1c")
                                     .attr("stroke-width", 2)
-                                    .attr("d", line);
-                            }
+                                    .attr("d", line)
+                                    .call(animateLine);
 
+                                // Function to animate the line drawing
+                                function animateLine(path) {
+                                    const totalLength = path.node().getTotalLength();
+
+                                    path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                        .attr("stroke-dashoffset", totalLength)
+                                        .transition()
+                                        .duration(2000)
+                                        .ease(d3.easeLinear)
+                                        .attr("stroke-dashoffset", 0);
+                                }
+                            }
                             // Listen for change in driver selection
                             const driverSelect1 = document.getElementById("driverSelect1");
                             const driverSelect2 = document.getElementById("driverSelect2");
@@ -590,6 +590,181 @@
 
                             // Initialize the chart with default drivers
                             updateChart();
+                        },
+                    });
+                },
+            });
+        },
+    });
+</script>
+
+
+<!--Script for Most Fastest Laps by a Season-->
+<script>
+    // Load the CSV data using PapaParse
+    Papa.parse("assets/data/drivers.csv", {
+        header: true,
+        download: true,
+        complete: function (driversData) {
+            // Store the drivers data in an object for easy access
+            const drivers = driversData.data.reduce((acc, driver) => {
+                acc[driver.driverId] = driver.forename + " " + driver.surname;
+                return acc;
+            }, {});
+
+            // Load the race data
+            Papa.parse("assets/data/races.csv", {
+                header: true,
+                download: true,
+                complete: function (racesData) {
+                    // Store the races data in an object for easy access
+                    const races = racesData.data.reduce((acc, race) => {
+                        acc[race.raceId] = race.year;
+                        return acc;
+                    }, {});
+
+                    // Load the result data
+                    Papa.parse("assets/data/results.csv", {
+                        header: true,
+                        download: true,
+                        complete: function (resultsData) {
+                            // Function to count rank 1 finishes by year for a driver
+                            function countRank1ByYear(driverId) {
+                                const rank1CountByYear = {};
+
+                                // Filter results based on driver ID and rank 1
+                                const driverResults = resultsData.data.filter(
+                                    (result) => result.driverId === driverId && result.rank === "1"
+                                );
+
+                                // Count rank 1 finishes by year
+                                driverResults.forEach((result) => {
+                                    const raceYear = races[result.raceId];
+
+                                    if (rank1CountByYear[raceYear]) {
+                                        rank1CountByYear[raceYear] += 1;
+                                    } else {
+                                        rank1CountByYear[raceYear] = 1;
+                                    }
+                                });
+
+                                return rank1CountByYear;
+                            }
+
+                            // Set up dimensions
+                            const width = 500;
+                            const height = 300;
+                            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+                            const innerWidth = width - margin.left - margin.right;
+                            const innerHeight = height - margin.top - margin.bottom;
+
+                            // Create SVG element
+                            const svg = d3
+                                .select("#chart")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .append("g")
+                                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+                            // Set up scales
+                            const xScale = d3.scaleBand().range([0, innerWidth]).padding(0.1);
+                            const yScale = d3.scaleLinear().range([innerHeight, 0]);
+
+                            // Define the line
+                            const line = d3
+                                .line()
+                                .x((d) => xScale(d.year) + xScale.bandwidth() / 2)
+                                .y((d) => yScale(d.points));
+
+                            // Add x-axis
+                            svg
+                                .append("g")
+                                .attr("class", "x-axis")
+                                .attr("transform", `translate(0, ${innerHeight})`);
+
+                            // Add y-axis
+                            svg.append("g").attr("class", "y-axis");
+
+                            // Function to update the chart based on selected drivers
+                            function updateChart2() {
+                                const driverId1 = driverSelect1.value;
+                                const driverId2 = driverSelect2.value;
+
+                                const driver1PointsByYear = countRank1ByYear(driverId1);
+                                const driver2PointsByYear = countRank1ByYear(driverId2);
+
+                                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                                    year: year,
+                                    points: driver1PointsByYear[year],
+                                }));
+
+                                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                                    year: year,
+                                    points: driver2PointsByYear[year],
+                                }));
+
+                                const data = driver1Data.concat(driver2Data);
+
+                                // Sort the data by year in ascending order
+                                data.sort((a, b) => a.year - b.year);
+
+                                // Update x-scale domain
+                                xScale.domain(data.map((d) => d.year));
+
+                                // Update y-scale domain
+                                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                                // Update x-axis
+                                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                                // Update y-axis
+                                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                                // Remove any existing lines
+                                svg.selectAll(".line").remove();
+
+                                // Add the line for driver 1
+                                svg.append("path")
+                                    .datum(driver1Data)
+                                    .attr("class", "line line1")
+                                    .attr("fill", "none")
+                                    .attr("stroke", "#377eb8")
+                                    .attr("stroke-width", 2)
+                                    .attr("d", line)
+                                    .call(animateLine);
+
+                                // Add the line for driver 2 with line drawing animation
+                                svg.append("path")
+                                    .datum(driver2Data)
+                                    .attr("class", "line line2")
+                                    .attr("fill", "none")
+                                    .attr("stroke", "#e41a1c")
+                                    .attr("stroke-width", 2)
+                                    .attr("d", line)
+                                    .call(animateLine);
+
+                                // Function to animate the line drawing
+                                function animateLine(path) {
+                                    const totalLength = path.node().getTotalLength();
+
+                                    path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                        .attr("stroke-dashoffset", totalLength)
+                                        .transition()
+                                        .duration(2000)
+                                        .ease(d3.easeLinear)
+                                        .attr("stroke-dashoffset", 0);
+                                }
+                            }
+                            // Listen for change in driver selection
+                            const driverSelect1 = document.getElementById("driverSelect1");
+                            const driverSelect2 = document.getElementById("driverSelect2");
+
+                            driverSelect1.addEventListener("change", updateChart2);
+                            driverSelect2.addEventListener("change", updateChart2);
+
+                            // Initialize the chart with default drivers
+                            updateChart2();
                         },
                     });
                 },
