@@ -249,12 +249,12 @@
 
         const svg = d3.select("#" + chartContainerId)
             .append("svg")
-            .attr("width", 450)
+            .attr("width", 500)
             .attr("height", 300);
 
         // Driver 1 bar
         svg.append("rect")
-            .attr("x", 150 - barWidthScale(driver1RaceCount))
+            .attr("x", 190 - barWidthScale(driver1RaceCount))
             .attr("y", 25)
             .attr("height", 50)
             .attr("fill", "#377eb8")
@@ -263,7 +263,7 @@
             .attr("width", barWidthScale(driver1RaceCount));
 
         svg.append("rect")
-            .attr("x", 150 - barWidthScale(driver1Wins))
+            .attr("x", 190 - barWidthScale(driver1Wins))
             .attr("y", 80)
             .attr("height", 50)
             .attr("fill", "#377eb8")
@@ -272,7 +272,7 @@
             .attr("width", barWidthScale(driver1Wins));
 
         svg.append("rect")
-            .attr("x", 150 - barWidthScale(driver1Podiums))
+            .attr("x", 190 - barWidthScale(driver1Podiums))
             .attr("y", 135)
             .attr("height", 50)
             .attr("fill", "#377eb8")
@@ -281,7 +281,7 @@
             .attr("width", barWidthScale(driver1Podiums));
 
         svg.append("rect")
-            .attr("x", 150 - barWidthScale(driver1Poles))
+            .attr("x", 190 - barWidthScale(driver1Poles))
             .attr("y", 190)
             .attr("height", 50)
             .attr("fill", "#377eb8")
@@ -291,7 +291,7 @@
 
         // Driver 2 bar
         svg.append("rect")
-            .attr("x", 300)
+            .attr("x", 305)
             .attr("y", 25)
             .attr("height", 50)
             .attr("fill", "#e41a1c")
@@ -300,7 +300,7 @@
             .attr("width", barWidthScale(driver2RaceCount));
 
         svg.append("rect")
-            .attr("x", 300)
+            .attr("x", 305)
             .attr("y", 80)
             .attr("height", 50)
             .attr("fill", "#e41a1c")
@@ -309,7 +309,7 @@
             .attr("width", barWidthScale(driver2Wins));
 
         svg.append("rect")
-            .attr("x", 300)
+            .attr("x", 305)
             .attr("y", 135)
             .attr("height", 50)
             .attr("fill", "#e41a1c")
@@ -318,7 +318,7 @@
             .attr("width", barWidthScale(driver2Podiums));
 
         svg.append("rect")
-            .attr("x", 300)
+            .attr("x", 305)
             .attr("y", 190)
             .attr("height", 50)
             .attr("fill", "#e41a1c")
@@ -328,85 +328,85 @@
 
         // Driver 1 text
         svg.append("text")
-            .attr("x", 150 - barWidthScale(driver1RaceCount) / 2)
+            .attr("x", 195 - barWidthScale(driver1RaceCount) - 25)
             .attr("y", 70)
             .attr("text-anchor", "middle")
             .text(driver1RaceCount)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 150 - barWidthScale(driver1Wins) / 2)
+            .attr("x", 195 - barWidthScale(driver1Wins) - 25)
             .attr("y", 125)
             .attr("text-anchor", "middle")
             .text(driver1Wins)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 150 - barWidthScale(driver1Podiums) / 2)
+            .attr("x", 195 - barWidthScale(driver1Podiums) - 25)
             .attr("y", 175)
             .attr("text-anchor", "middle")
             .text(driver1Podiums)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 150 - barWidthScale(driver1Poles) / 2)
+            .attr("x", 195 - barWidthScale(driver1Poles) - 25)
             .attr("y", 235)
             .attr("text-anchor", "middle")
             .text(driver1Poles)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         // Driver 2 text
         svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2RaceCount) / 2)
+            .attr("x", 300 + barWidthScale(driver2RaceCount) + 25)
             .attr("y", 70)
             .attr("text-anchor", "middle")
             .text(driver2RaceCount)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Wins) / 2)
+            .attr("x", 300 + barWidthScale(driver2Wins) + 25)
             .attr("y", 125)
             .attr("text-anchor", "middle")
             .text(driver2Wins)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Podiums) / 2)
+            .attr("x", 300 + barWidthScale(driver2Podiums) + 25)
             .attr("y", 175)
             .attr("text-anchor", "middle")
             .text(driver2Podiums)
-            .style("fill", "#fff");
+            .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Poles) / 2)
+            .attr("x", 300 + barWidthScale(driver2Poles) + 25)
             .attr("y", 235)
             .attr("text-anchor", "middle")
             .text(driver2Poles)
-            .style("fill", "#fff"); /*gg*/
+            .style("fill", "#000"); /*gg*/
 
         svg.append("text")
-            .attr("x", 225)
+            .attr("x", 250)
             .attr("y", 60)
             .attr("text-anchor", "middle")
             .text("Races")
             .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 225)
+            .attr("x", 250)
             .attr("y", 110)
             .attr("text-anchor", "middle")
             .text("Wins")
             .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 225)
+            .attr("x", 250)
             .attr("y", 170)
             .attr("text-anchor", "middle")
             .text("Podiums")
             .style("fill", "#000");
 
         svg.append("text")
-            .attr("x", 225)
+            .attr("x", 250)
             .attr("y", 230)
             .attr("text-anchor", "middle")
             .text("Poles")
