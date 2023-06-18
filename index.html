@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>On The Inside</title>
+    <title>On The Inside</title><title>On The Inside</title>
     <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
@@ -29,11 +29,23 @@
             align-items: center;
         }
 
-        /*#chart {*/
-        /*    display: flex;*/
-        /*    justify-content: center;*/
-        /*    align-items: center;*/
-        /*}*/
+        #chart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #Title {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #Text {
+            display: flex;
+            /*justify-content: center;*/
+            /*align-items: center;*/
+        }
 
     </style>
 </head>
@@ -56,21 +68,27 @@
 </div>
 
 <div id="Title">
-    <h2><span style="margin-left: 830px;">Driver Comparison</span> </h2>
+    <h2>Driver Comparison</h2>
 </div>
 
 <div id="butterflyChart">
 </div>
 
+<div id="Text">
+    <!--    <h2>Points Scored by Season</h2>-->
+        <h2><span style="margin-left: 400px;">Points Scored by Season</span> <span style="margin-left: 450px;">Most Fastest Laps</span></h2>
+
+</div>
+
 <div id="chart">
 <!--    <h2>Points Scored by Season</h2>-->
-    <h2><span style="margin-left: 120px;">Points Scored by Season</span> <span style="margin-left: 180px;">Most Fastest Laps</span></h2>
+<!--    <h2><span style="margin-left: 120px;">Points Scored by Season</span> <span style="margin-left: 180px;">Most Fastest Laps</span></h2>-->
 
 </div>
 
 
 <div id="footer">
-    <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
+    <p>&copy; 2023 Formula 1 Dashboard. All rights reserved. by Arif & Shuhail </p>
 </div>
 
 <script>
@@ -477,7 +495,7 @@
                             }
 
                             // Set up dimensions
-                            const width = 500;
+                            const width = 800;
                             const height = 300;
                             const margin = { top: 20, right: 20, bottom: 30, left: 50 };
                             const innerWidth = width - margin.left - margin.right;
@@ -652,9 +670,9 @@
                             }
 
                             // Set up dimensions
-                            const width = 500;
+                            const width = 800;
                             const height = 300;
-                            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+                            const margin = { top: 20, right: 20, bottom: 30, left: 80 };
                             const innerWidth = width - margin.left - margin.right;
                             const innerHeight = height - margin.top - margin.bottom;
 
