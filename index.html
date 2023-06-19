@@ -134,7 +134,6 @@
             if (selectedDriver1) {
                 const desiredDriverId1 = parseInt(selectedDriver1);
                 printDriverResults(desiredDriverId1, "raceCount1");
-                updateBarChart(desiredDriverId1, "barChart1");
             }
         });
 
@@ -143,7 +142,6 @@
             if (selectedDriver2) {
                 const desiredDriverId2 = parseInt(selectedDriver2);
                 printDriverResults(desiredDriverId2, "raceCount2");
-                updateBarChart(desiredDriverId2, "barChart2");
             }
         });
 
@@ -174,7 +172,6 @@
 
                         // Check if all CSV files are loaded and call the function to print driver results
                         if (fileCount === files.length) {
-                            updateBarChart();
                         }
                     },
                     error: function(error) {
@@ -252,7 +249,7 @@
             .attr("width", 500)
             .attr("height", 300);
 
-        // Driver 1 bar
+// Driver 1 bar
         svg.append("rect")
             .attr("x", 190 - barWidthScale(driver1RaceCount))
             .attr("y", 25)
@@ -289,7 +286,7 @@
             .duration(1000)
             .attr("width", barWidthScale(driver1Poles));
 
-        // Driver 2 bar
+// Driver 2 bar
         svg.append("rect")
             .attr("x", 305)
             .attr("y", 25)
@@ -325,8 +322,7 @@
             .transition()
             .duration(1000)
             .attr("width", barWidthScale(driver2Poles));
-
-        // Driver 1 text
+// Driver 1 text
         svg.append("text")
             .attr("x", 195 - barWidthScale(driver1RaceCount) - 25)
             .attr("y", 70)
@@ -355,7 +351,7 @@
             .text(driver1Poles)
             .style("fill", "#000");
 
-        // Driver 2 text
+// Driver 2 text
         svg.append("text")
             .attr("x", 300 + barWidthScale(driver2RaceCount) + 25)
             .attr("y", 70)
@@ -575,7 +571,16 @@
                                     .attr("stroke", "#377eb8")
                                     .attr("stroke-width", 2)
                                     .attr("d", line)
-                                    .call(animateLine);
+                                    .each(function () {
+                                        const path = d3.select(this);
+                                        const totalLength = path.node().getTotalLength();
+
+                                        path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                            .attr("stroke-dashoffset", totalLength)
+                                            .transition()
+                                            .duration(2000)
+                                            .attr("stroke-dashoffset", 0);
+                                    });
 
                                 // Add the line for driver 2 with line drawing animation
                                 svg.append("path")
@@ -585,19 +590,28 @@
                                     .attr("stroke", "#e41a1c")
                                     .attr("stroke-width", 2)
                                     .attr("d", line)
-                                    .call(animateLine);
+                                    .each(function () {
+                                        const path = d3.select(this);
+                                        const totalLength = path.node().getTotalLength();
 
-                                // Function to animate the line drawing
-                                function animateLine(path) {
-                                    const totalLength = path.node().getTotalLength();
+                                        path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                            .attr("stroke-dashoffset", totalLength)
+                                            .transition()
+                                            .duration(2000)
+                                            .attr("stroke-dashoffset", 0);
+                                    });
 
-                                    path.attr("stroke-dasharray", totalLength + " " + totalLength)
-                                        .attr("stroke-dashoffset", totalLength)
-                                        .transition()
-                                        .duration(2000)
-                                        .ease(d3.easeLinear)
-                                        .attr("stroke-dashoffset", 0);
-                                }
+
+                                // function animateLine(path) {
+                                //     const totalLength = path.node().getTotalLength();
+                                //
+                                //     path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                //         .attr("stroke-dashoffset", totalLength)
+                                //         .transition()
+                                //         .duration(2000)
+                                //         .ease(d3.easeLinear)
+                                //         .attr("stroke-dashoffset", 0);
+                                // }
                             }
                             // Listen for change in driver selection
                             const driverSelect1 = document.getElementById("driverSelect1");
@@ -782,6 +796,7 @@
                             driverSelect2.addEventListener("change", updateChart2);
 
                             // Initialize the chart with default drivers
+                            updateButterflyChart(1, 2, "butterflyChart");
                             updateChart2();
                         },
                     });
