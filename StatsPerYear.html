@@ -101,12 +101,12 @@
     <div class="arrow" id="prevYear">&lt;</div>
     <input type="range" id="year" name="year" min="1950" max="2022" value="2007">
     <div class="arrow" id="nextYear">&gt;</div>
+    <div id="selectedYearDisplay"></div> <!-- New div to display selected year -->
 </div>
 <div id="highestPointsDisplay"></div>
 <div id="mostFastestLapsDisplay"></div>
 <div id="mostPodiumFinishesDisplay"></div>
 <div id="constructorDisplay"></div>
-
 <div id="chart"></div>
 
 <script>
@@ -191,7 +191,8 @@
                 });
 
                 const highestPointsDisplay = document.getElementById("highestPointsDisplay");
-                highestPointsDisplay.textContent = `Driver Champion in ${selectedYear}: ${highestPointsDriver}`;
+                highestPointsDisplay.textContent = `Driver Champion : ${highestPointsDriver}`;
+                // highestPointsDisplay.textContent = `Driver Champion in ${selectedYear}: ${highestPointsDriver}`;
             },
         });
     }
@@ -246,7 +247,8 @@
                     }
                 });
                 const mostFastestLapsDisplay = document.getElementById("mostFastestLapsDisplay");
-                mostFastestLapsDisplay.textContent = `Most Fastest Lap in ${selectedYear}: ${mostFastestLapsDriver}`;
+                mostFastestLapsDisplay.textContent = `Most Fastest Laps: ${mostFastestLapsDriver}`;
+                //mostFastestLapsDisplay.textContent = `Most Fastest Laps in ${selectedYear}: ${mostFastestLapsDriver}`;
             },
         });
     }
@@ -305,7 +307,8 @@
                 });
 
                 const mostPodiumFinishesDisplay = document.getElementById("mostPodiumFinishesDisplay");
-                mostPodiumFinishesDisplay.textContent = `Most Podium in ${selectedYear}: ${mostPodiumFinishesDriver}`;
+                mostPodiumFinishesDisplay.textContent = `Most Podiums: ${mostPodiumFinishesDriver}`;
+                //mostPodiumFinishesDisplay.textContent = `Most Podiums in ${selectedYear}: ${mostPodiumFinishesDriver}`;
             },
         });
     }
@@ -372,7 +375,8 @@
                             }
                         });
                         const constructorDisplay = document.getElementById("constructorDisplay");
-                        constructorDisplay.textContent = `Constructor Champion in ${selectedYear}: ${highestPointsConstructor}`;
+                        constructorDisplay.textContent = `Constructor Champion: ${highestPointsConstructor}`;
+                        //constructorDisplay.textContent = `Constructor Champion in ${selectedYear}: ${highestPointsConstructor}`;
                     },
                 });
             },
@@ -382,6 +386,13 @@
     const yearSlider = document.getElementById("year");
     const prevYearButton = document.getElementById("prevYear");
     const nextYearButton = document.getElementById("nextYear");
+    const selectedYearDisplay = document.getElementById("selectedYearDisplay");
+
+    // Update the selected year display
+    function updateSelectedYearDisplay() {
+        const selectedYear = parseInt(yearSlider.value);
+        selectedYearDisplay.textContent = `Selected Year: ${selectedYear}`;
+    }
 
     yearSlider.addEventListener("input", function () {
         findDriverWithHighestPointsByYear();
@@ -389,6 +400,7 @@
         findDriverWithMostPodiumFinishesByYear();
         findConstructorWithHighestPointsByYear();
         updateChart();
+        updateSelectedYearDisplay();
     });
 
     prevYearButton.addEventListener("click", function () {
@@ -398,6 +410,7 @@
         findDriverWithMostPodiumFinishesByYear();
         findConstructorWithHighestPointsByYear();
         updateChart();
+        updateSelectedYearDisplay();
     });
 
     nextYearButton.addEventListener("click", function () {
@@ -407,6 +420,7 @@
         findDriverWithMostPodiumFinishesByYear();
         findConstructorWithHighestPointsByYear();
         updateChart();
+        updateSelectedYearDisplay();
     });
 
     findDriverWithHighestPointsByYear();
@@ -414,6 +428,7 @@
     findDriverWithMostPodiumFinishesByYear();
     findConstructorWithHighestPointsByYear();
     updateChart();
+    updateSelectedYearDisplay();
 </script>
 
 <script>
@@ -421,6 +436,8 @@
     let svg;
 
     const updateChart = () => {
+
+
         d3.select("#chart").selectAll("svg").remove();
 
         // Filter the data for a specific year
@@ -528,7 +545,6 @@
                 svg.select(".points-scored").remove();
             });
 
-
         // X-axis
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
@@ -544,7 +560,7 @@
             .attr("y", 50)
             .attr("text-anchor", "middle")
             .style("font-size", "16px")
-            .text(`Driver Standings for ${selectedYear}`);
+            // .text(`Driver Standings for ${selectedYear}`);
 
     };
     Promise.all([
@@ -560,7 +576,9 @@
 
         yearSlider.addEventListener("input", updateChart);
 
+
         updateChart();
+        updateSelectedYearDisplay();
     }).catch(error => {
         console.log(error);
     });
