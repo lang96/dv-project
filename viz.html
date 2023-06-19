@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
 
     <style>
         @font-face {
@@ -50,12 +51,10 @@
 
 <div id="map"></div>
 
-<div id="butterflyChart"></div>
-
-<div id="chart"></div>
+<div id="tooltip" style="position: absolute; opacity: 0;"></div>
 
 <div id="footer">
-    <p>&copy; 2023 Formula 1 Dashboard. All rights reserved.</p>
+    <p>2023 | On The Inside | Presented to you by Arif & Shuhail</p>
 </div>
 
 <script>
@@ -173,6 +172,26 @@
             return winCircuitIds.includes(result.circuitId);
         });
 
+        const countryWins = {};
+
+        winRaces.forEach(function (race) {
+            const circuit = winCircuits.find(function (circuit) {
+                return circuit.circuitId === race.circuitId;
+            });
+
+            if (circuit) {
+                const country = circuit.country;
+                if (countryWins[country]) {
+                    countryWins[country]++;
+                } else {
+                    countryWins[country] = 1;
+                }
+            }
+        });
+
+        // Calculate the maximum number of wins
+        const maxWins = Math.max(...Object.values(countryWins));
+
         const chartContainer = document.getElementById(chartContainerId);
         chartContainer.innerHTML = "";
 
@@ -201,12 +220,11 @@
                 .append("path")
                 .attr("d", path)
                 .attr("fill", function(d) {
-                    // Lookup the number of wins for the current country (replace "wins" with the actual attribute name in your data)
-                    const countryData = winCircuits.find(country => country.country === d.properties.ADMIN);
-                    if (countryData) {
-                        console.log(countryData.name);
-                        // Replace the color based on the number of wins (you can choose your own color scale)
-                        return d3.interpolateReds(driverWins / 10); // Adjust the scale to fit your actual data range
+                    // Lookup the number of wins for the current country
+                    const wins = countryWins[d.properties.ADMIN];
+                    if (wins) {
+                        // Replace the color based on the number of wins
+                        return d3.interpolateReds(wins / maxWins);
                     } else {
                         return "#ccc"; // Default color for countries without data
                     }
@@ -251,6 +269,28 @@
             return podiumCircuitIds.includes(result.circuitId);
         });
 
+        const countryPodiums = {};
+
+        podiumRaces.forEach(function (race) {
+            const circuit = podiumCircuits.find(function (circuit) {
+                return circuit.circuitId === race.circuitId;
+            });
+
+            if (circuit) {
+                const country = circuit.country;
+                if (countryPodiums[country]) {
+                    countryPodiums[country]++;
+                } else {
+                    countryPodiums[country] = 1;
+                }
+            }
+        });
+
+        console.log(countryPodiums);
+
+        // Calculate the maximum number of wins
+        const maxPodiums = Math.max(...Object.values(countryPodiums));
+
         const chartContainer = document.getElementById(chartContainerId);
         chartContainer.innerHTML = "";
 
@@ -267,6 +307,9 @@
             .scale(130)
             .translate([width / 2, height / 1.4]);
 
+        // Select the tooltip element
+        const tooltip = d3.select("#tooltip");
+
         // Create a path generator
         const path = d3.geoPath().projection(projection);
 
@@ -279,15 +322,67 @@
                 .append("path")
                 .attr("d", path)
                 .attr("fill", function(d) {
-                    // Lookup the number of wins for the current country (replace "wins" with the actual attribute name in your data)
-                    const countryData = podiumCircuits.find(country => country.country === d.properties.ADMIN);
-                    if (countryData) {
-                        // Replace the color based on the number of wins (you can choose your own color scale)
-                        return d3.interpolateReds(5 / 10); // Adjust the scale to fit your actual data range
+                    // Lookup the number of podiums for the current country
+                    const podiums = countryPodiums[d.properties.ADMIN];
+                    if (podiums) {
+                        // Replace the color based on the number of podiums
+                        return d3.interpolateGreens(podiums / maxPodiums);
                     } else {
                         return "#ccc"; // Default color for countries without data
                     }
+                })
+                // Add hover actions and tooltip display
+                .on("mouseover", function(event, d) {
+                    // Increase the opacity of the hovered country
+                    d3.select(this).style("opacity", 0.7);
+
+                    const podiums = countryPodiums[d.properties.ADMIN];
+                    const podiumsText = podiums !== null && podiums !== undefined ? podiums : 0;
+
+                    // Position and display the tooltip
+                    tooltip.style("left", event.pageX + "px")
+                        .style("top", event.pageY + "px")
+                        .style("opacity", 1)
+                        .html(`<strong>${d.properties.ADMIN}</strong><br>Podiums: ${podiumsText}`);
+                })
+                .on("mouseout", function() {
+                    // Reset the opacity and hide the tooltip
+                    d3.select(this).style("opacity", 1);
+                    tooltip.style("opacity", 0);
                 });
+        });
+
+        // Create a zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8]) // Set the zoom scale range
+            .on("zoom", zoomed);
+
+        // Apply the zoom behavior to the SVG container
+        svg.call(zoom);
+
+        // Define the zoom handler function
+        function zoomed(event) {
+            // Get the current zoom transformation
+            const { transform } = event;
+
+            // Apply the transformation to the map features
+            svg.selectAll("path")
+                .attr("transform", transform);
+        }
+
+        // Add a listener for the mouse scroll event
+        svg.on("wheel", function(event) {
+            // Prevent the default scroll behavior
+            event.preventDefault();
+
+            // Get the current zoom scale
+            const currentScale = d3.zoomTransform(this).k;
+
+            // Calculate the new scale based on the scroll event
+            const newScale = currentScale - event.deltaY * 0.01;
+
+            // Apply the new scale with a smooth transition
+            svg.transition().duration(200).call(zoom.scaleTo, newScale);
         });
 
     }
@@ -327,6 +422,28 @@
             return poleCircuitIds.includes(result.circuitId);
         });
 
+        const countryPoles = {};
+
+        poleRaces.forEach(function (race) {
+            const circuit = poleCircuits.find(function (circuit) {
+                return circuit.circuitId === race.circuitId;
+            });
+
+            if (circuit) {
+                const country = circuit.country;
+                if (countryPoles[country]) {
+                    countryPoles[country]++;
+                } else {
+                    countryPoles[country] = 1;
+                }
+            }
+        });
+
+        // Calculate the maximum number of wins
+        const maxPoles = Math.max(...Object.values(countryPoles));
+
+        console.log(countryPoles);
+
         const chartContainer = document.getElementById(chartContainerId);
         chartContainer.innerHTML = "";
 
@@ -355,240 +472,17 @@
                 .append("path")
                 .attr("d", path)
                 .attr("fill", function(d) {
-                    // Lookup the number of wins for the current country (replace "wins" with the actual attribute name in your data)
-                    const countryData = poleCircuits.find(country => country.country === d.properties.ADMIN);
-                    if (countryData) {
-                        // Replace the color based on the number of wins (you can choose your own color scale)
-                        return d3.interpolateReds(5 / 10); // Adjust the scale to fit your actual data range
+                    // Lookup the number of podiums for the current country
+                    const poles = countryPoles[d.properties.ADMIN];
+                    if (poles) {
+                        // Replace the color based on the number of podiums
+                        return d3.interpolateBlues(poles / maxPoles);
                     } else {
                         return "#ccc"; // Default color for countries without data
                     }
                 });
         });
 
-    }
-
-    // Function to update the butterfly chart
-    function updateButterflyChart(driverId1, driverId2, chartContainerId) {
-        const driverData = csvData["drivers.csv"];
-        const driverResultsData = csvData["results.csv"];
-        const qualifyingData = csvData["qualifying.csv"];
-
-        const driver1 = driverData.find(function (driver) {
-            return driver.driverId === driverId1;
-        });
-
-        const driver2 = driverData.find(function (driver) {
-            return driver.driverId === driverId2;
-        });
-
-        const driver1Results = driverResultsData.filter(function (result) {
-            return result.driverId === driverId1;
-        });
-
-        const driver2Results = driverResultsData.filter(function (result) {
-            return result.driverId === driverId2;
-        });
-
-        const driver1RaceCount = driver1Results.length;
-        const driver2RaceCount = driver2Results.length;
-
-        const driver1Wins = driverResultsData.filter(function (result) {
-            return result.driverId === driverId1 && result.position === 1;
-        }).length;
-
-        const driver2Wins = driverResultsData.filter(function (result) {
-            return result.driverId === driverId2 && result.position === 1;
-        }).length;
-
-        const driver1Podiums = driverResultsData.filter(function (result) {
-            return result.driverId === driverId1 && result.position <= 3;
-        }).length;
-
-        const driver2Podiums = driverResultsData.filter(function (result) {
-            return result.driverId === driverId2 && result.position <= 3;
-        }).length;
-
-        const driver1Poles = qualifyingData.filter(function (result) {
-            return result.driverId === driverId1 && result.position === 1;
-        }).length;
-
-        const driver2Poles = qualifyingData.filter(function (result) {
-            return result.driverId === driverId2 && result.position === 1;
-        }).length;
-
-        const chartContainer = document.getElementById(chartContainerId);
-        chartContainer.innerHTML = "";
-
-        const maxRaceCount = Math.max(driver1RaceCount, driver2RaceCount);
-        const barWidthScale = d3.scaleLinear()
-            .domain([0, maxRaceCount])
-            .range([0, 150]);
-
-        const svg = d3.select("#" + chartContainerId)
-            .append("svg")
-            .attr("width", 500)
-            .attr("height", 300);
-
-        // Driver 1 bar
-        svg.append("rect")
-            .attr("x", 190 - barWidthScale(driver1RaceCount))
-            .attr("y", 25)
-            .attr("height", 50)
-            .attr("fill", "#377eb8")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver1RaceCount));
-
-        svg.append("rect")
-            .attr("x", 190 - barWidthScale(driver1Wins))
-            .attr("y", 80)
-            .attr("height", 50)
-            .attr("fill", "#377eb8")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver1Wins));
-
-        svg.append("rect")
-            .attr("x", 190 - barWidthScale(driver1Podiums))
-            .attr("y", 135)
-            .attr("height", 50)
-            .attr("fill", "#377eb8")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver1Podiums));
-
-        svg.append("rect")
-            .attr("x", 190 - barWidthScale(driver1Poles))
-            .attr("y", 190)
-            .attr("height", 50)
-            .attr("fill", "#377eb8")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver1Poles));
-
-        // Driver 2 bar
-        svg.append("rect")
-            .attr("x", 305)
-            .attr("y", 25)
-            .attr("height", 50)
-            .attr("fill", "#e41a1c")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver2RaceCount));
-
-        svg.append("rect")
-            .attr("x", 305)
-            .attr("y", 80)
-            .attr("height", 50)
-            .attr("fill", "#e41a1c")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver2Wins));
-
-        svg.append("rect")
-            .attr("x", 305)
-            .attr("y", 135)
-            .attr("height", 50)
-            .attr("fill", "#e41a1c")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver2Podiums));
-
-        svg.append("rect")
-            .attr("x", 305)
-            .attr("y", 190)
-            .attr("height", 50)
-            .attr("fill", "#e41a1c")
-            .transition()
-            .duration(1000)
-            .attr("width", barWidthScale(driver2Poles));
-
-        // Driver 1 text
-        svg.append("text")
-            .attr("x", 195 - barWidthScale(driver1RaceCount) - 25)
-            .attr("y", 70)
-            .attr("text-anchor", "middle")
-            .text(driver1RaceCount)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 195 - barWidthScale(driver1Wins) - 25)
-            .attr("y", 125)
-            .attr("text-anchor", "middle")
-            .text(driver1Wins)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 195 - barWidthScale(driver1Podiums) - 25)
-            .attr("y", 175)
-            .attr("text-anchor", "middle")
-            .text(driver1Podiums)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 195 - barWidthScale(driver1Poles) - 25)
-            .attr("y", 235)
-            .attr("text-anchor", "middle")
-            .text(driver1Poles)
-            .style("fill", "#000");
-
-        // Driver 2 text
-        svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2RaceCount) + 25)
-            .attr("y", 70)
-            .attr("text-anchor", "middle")
-            .text(driver2RaceCount)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Wins) + 25)
-            .attr("y", 125)
-            .attr("text-anchor", "middle")
-            .text(driver2Wins)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Podiums) + 25)
-            .attr("y", 175)
-            .attr("text-anchor", "middle")
-            .text(driver2Podiums)
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 300 + barWidthScale(driver2Poles) + 25)
-            .attr("y", 235)
-            .attr("text-anchor", "middle")
-            .text(driver2Poles)
-            .style("fill", "#000"); /*gg*/
-
-        svg.append("text")
-            .attr("x", 250)
-            .attr("y", 60)
-            .attr("text-anchor", "middle")
-            .text("Races")
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 250)
-            .attr("y", 110)
-            .attr("text-anchor", "middle")
-            .text("Wins")
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 250)
-            .attr("y", 170)
-            .attr("text-anchor", "middle")
-            .text("Podiums")
-            .style("fill", "#000");
-
-        svg.append("text")
-            .attr("x", 250)
-            .attr("y", 230)
-            .attr("text-anchor", "middle")
-            .text("Poles")
-            .style("fill", "#000");
     }
 
     driverSelect1.addEventListener("change", function () {
@@ -599,10 +493,9 @@
             const desiredDriverId1 = parseInt(selectedDriver1);
             const desiredDriverId2 = parseInt(selectedDriver2);
 
-            updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
-            updateWinMap(desiredDriverId1, "map");
-            // incoming podium
-            // incoming pole
+            // updateWinMap(desiredDriverId1, "map");
+            // updatePodiumMap(desiredDriverId1, "map");
+            updatePoleMap(desiredDriverId1, "map");
         }
     });
 
@@ -614,206 +507,11 @@
             const desiredDriverId1 = parseInt(selectedDriver1);
             const desiredDriverId2 = parseInt(selectedDriver2);
 
-            updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
             updatePodiumMap(desiredDriverId2, "map");
         }
     });
 
 </script>
 
-<script>
-    // Load the CSV data using PapaParse
-    Papa.parse("assets/data/drivers.csv", {
-        header: true,
-        download: true,
-        complete: function (driversData) {
-            // Store the drivers data in an object for easy access
-            const drivers = driversData.data.reduce((acc, driver) => {
-                acc[driver.driverId] = driver.forename + " " + driver.surname;
-                return acc;
-            }, {});
-
-            // Get the driver IDs
-            const driverIds = Object.keys(drivers);
-
-            // Sort driver options based on the first letter of the driver's name
-            driverIds.sort(function(a, b) {
-                const nameA = drivers[a].charAt(0).toUpperCase();
-                const nameB = drivers[b].charAt(0).toUpperCase();
-                if (nameA < nameB) {
-                    return -1;
-                }
-                if (nameA > nameB) {
-                    return 1;
-                }
-                return 0;
-            });
-
-            // Populate the dropdown menus with driver options
-            const driverSelect1 = document.getElementById("driverSelect1");
-            const driverSelect2 = document.getElementById("driverSelect2");
-
-            driverIds.forEach((driverId) => {
-                const option1 = document.createElement("option");
-                option1.value = driverId;
-                option1.textContent = drivers[driverId];
-                driverSelect1.appendChild(option1);
-
-                const option2 = document.createElement("option");
-                option2.value = driverId;
-                option2.textContent = drivers[driverId];
-                driverSelect2.appendChild(option2);
-            });
-
-            // Load the race data
-            Papa.parse("assets/data/races.csv", {
-                header: true,
-                download: true,
-                complete: function (racesData) {
-                    // Store the races data in an object for easy access
-                    const races = racesData.data.reduce((acc, race) => {
-                        acc[race.raceId] = race.year;
-                        return acc;
-                    }, {});
-
-                    // Load the result data
-                    Papa.parse("assets/data/results.csv", {
-                        header: true,
-                        download: true,
-                        complete: function (resultsData) {
-                            // Function to get points scored by year for a driver
-                            function getPointsByYear(driverId) {
-                                const driverPointsByYear = {};
-
-                                // Filter results based on driver ID
-                                const driverResults = resultsData.data.filter(
-                                    (result) => result.driverId === driverId
-                                );
-
-                                // Calculate points scored by year
-                                driverResults.forEach((result) => {
-                                    const raceYear = races[result.raceId];
-                                    const points = parseInt(result.points);
-
-                                    if (driverPointsByYear[raceYear]) {
-                                        driverPointsByYear[raceYear] += points;
-                                    } else {
-                                        driverPointsByYear[raceYear] = points;
-                                    }
-                                });
-
-                                return driverPointsByYear;
-                            }
-
-                            // Set up dimensions
-                            const width = 500;
-                            const height = 300;
-                            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
-                            const innerWidth = width - margin.left - margin.right;
-                            const innerHeight = height - margin.top - margin.bottom;
-
-                            // Create SVG element
-                            const svg = d3
-                                .select("#chart")
-                                .append("svg")
-                                .attr("width", width)
-                                .attr("height", height)
-                                .append("g")
-                                .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-                            // Set up scales
-                            const xScale = d3.scaleBand().range([0, innerWidth]).padding(0.1);
-                            const yScale = d3.scaleLinear().range([innerHeight, 0]);
-
-                            // Define the line
-                            const line = d3
-                                .line()
-                                .x((d) => xScale(d.year) + xScale.bandwidth() / 2)
-                                .y((d) => yScale(d.points));
-
-                            // Add x-axis
-                            svg
-                                .append("g")
-                                .attr("class", "x-axis")
-                                .attr("transform", `translate(0, ${innerHeight})`);
-
-                            // Add y-axis
-                            svg.append("g").attr("class", "y-axis");
-
-                            // Function to update the chart based on selected drivers
-                            function updateChart() {
-                                const driverId1 = driverSelect1.value;
-                                const driverId2 = driverSelect2.value;
-
-                                const driver1PointsByYear = getPointsByYear(driverId1);
-                                const driver2PointsByYear = getPointsByYear(driverId2);
-
-                                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
-                                    year: year,
-                                    points: driver1PointsByYear[year],
-                                }));
-
-                                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
-                                    year: year,
-                                    points: driver2PointsByYear[year],
-                                }));
-
-                                const data = driver1Data.concat(driver2Data);
-
-                                // Sort the data by year in ascending order
-                                data.sort((a, b) => a.year - b.year);
-
-                                // Update x-scale domain
-                                xScale.domain(data.map((d) => d.year));
-
-                                // Update y-scale domain
-                                yScale.domain([0, d3.max(data, (d) => d.points)]);
-
-                                // Update x-axis
-                                svg.select(".x-axis").call(d3.axisBottom(xScale));
-
-                                // Update y-axis
-                                svg.select(".y-axis").call(d3.axisLeft(yScale));
-
-                                // Remove any existing lines
-                                svg.selectAll(".line").remove();
-
-                                // Add the line for driver 1
-                                svg
-                                    .append("path")
-                                    .datum(driver1Data)
-                                    .attr("class", "line line1")
-                                    .attr("fill", "none")
-                                    .attr("stroke", "#377eb8")
-                                    .attr("stroke-width", 2)
-                                    .attr("d", line);
-
-                                // Add the line for driver 2
-                                svg
-                                    .append("path")
-                                    .datum(driver2Data)
-                                    .attr("class", "line line2")
-                                    .attr("fill", "none")
-                                    .attr("stroke", "#e41a1c")
-                                    .attr("stroke-width", 2)
-                                    .attr("d", line);
-                            }
-
-                            // Listen for change in driver selection
-                            const driverSelect1 = document.getElementById("driverSelect1");
-                            const driverSelect2 = document.getElementById("driverSelect2");
-
-                            driverSelect1.addEventListener("change", updateChart);
-                            driverSelect2.addEventListener("change", updateChart);
-
-                            // Initialize the chart with default drivers
-                            updateChart();
-                        },
-                    });
-                },
-            });
-        },
-    });
-</script>
 </body>
 </html>

@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
 
     <style>
         @font-face {
@@ -77,21 +78,13 @@
 <div id="butterflyChart"></div>
 
 <div id="Text">
-    <!--    <h2>Points Scored by Season</h2>-->
         <h2><span style="margin-left: 400px;">Points Scored by Season</span> <span style="margin-left: 450px;">Most Fastest Laps</span></h2>
-
 </div>
 
-<div id="chart">
-<!--    <h2>Points Scored by Season</h2>-->
-<!--    <h2><span style="margin-left: 120px;">Points Scored by Season</span> <span style="margin-left: 180px;">Most Fastest Laps</span></h2>-->
-
-</div>
-
+<div id="chart"></div>
 
 <div id="footer">
-<!--    &copy;-->
-    <p>2023 | On The Inside | Presented to you by Arif & Shuhail </p>
+    <p>2023 | On The Inside | Presented to you by Arif & Shuhail</p>
 </div>
 
 <script>
@@ -109,8 +102,38 @@
     }
 
     // Read and parse multiple CSV files
-    const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv", "assets/data/driver_standings.csv" , "assets/data/qualifying.csv"];
+    const files = ["assets/data/circuits.csv", "assets/data/driver_standings.csv", "assets/data/drivers.csv", "assets/data/qualifying.csv",
+                    "assets/data/races.csv", "assets/data/results.csv"];
     let fileCount = 0;
+
+    files.forEach(function(file) {
+        const filename = file.split('/').pop();
+        fetch(file)
+            .then(response => response.text())
+            .then(csvContent => {
+                Papa.parse(csvContent, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        // Handle the parsed data for each file
+                        handleCSVData(filename, results);
+                        fileCount++;
+
+                        // Check if all CSV files are loaded and call the function to print driver results
+                        if (fileCount === files.length) {
+                        }
+                    },
+                    error: function(error) {
+                        console.error("Error parsing file:", file);
+                        console.error(error);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error loading CSV file:", file);
+                console.error(error);
+            });
+    });
 
     // Function to populate the driver dropdowns
     function populateDriverDropdown() {
@@ -143,35 +166,6 @@
             driverSelect2.appendChild(option2);
         });
     }
-
-    files.forEach(function(file) {
-        const filename = file.split('/').pop();
-        fetch(file)
-            .then(response => response.text())
-            .then(csvContent => {
-                Papa.parse(csvContent, {
-                    header: true,
-                    dynamicTyping: true,
-                    complete: function(results) {
-                        // Handle the parsed data for each file
-                        handleCSVData(filename, results);
-                        fileCount++;
-
-                        // Check if all CSV files are loaded and call the function to print driver results
-                        if (fileCount === files.length) {
-                        }
-                    },
-                    error: function(error) {
-                        console.error("Error parsing file:", file);
-                        console.error(error);
-                    }
-                });
-            })
-            .catch(error => {
-                console.error("Error loading CSV file:", file);
-                console.error(error);
-            });
-    });
 
     // Function to update the butterfly chart
     function updateButterflyChart(driverId1, driverId2, chartContainerId) {
