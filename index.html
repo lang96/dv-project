@@ -7,6 +7,7 @@
 <!--    <link rel="stylesheet" href="assets/css/style.css">-->
 
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
 
@@ -81,6 +82,14 @@
             text-align: center;
         }
 
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px;
+            display: none;
+        }
     </style>
 </head>
 
@@ -1019,6 +1028,12 @@
                             // Add y-axis
                             svg.append("g").attr("class", "y-axis");
 
+                            // Add tooltip
+                            const tooltip = d3
+                                .select("body")
+                                .append("div")
+                                .attr("class", "tooltip");
+
                             // Function to update the chart based on selected drivers
                             function updateChart() {
                                 const driverId1 = driverSelect1.value;
@@ -1030,11 +1045,13 @@
                                 const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
                                     year: year,
                                     points: driver1PointsByYear[year],
+                                    driver: 1,
                                 }));
 
                                 const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
                                     year: year,
                                     points: driver2PointsByYear[year],
+                                    driver: 2,
                                 }));
 
                                 const data = driver1Data.concat(driver2Data);
@@ -1095,17 +1112,30 @@
                                             .attr("stroke-dashoffset", 0);
                                     });
 
+                                // Remove any existing dots
+                                svg.selectAll(".dot").remove();
 
-                                // function animateLine(path) {
-                                //     const totalLength = path.node().getTotalLength();
-                                //
-                                //     path.attr("stroke-dasharray", totalLength + " " + totalLength)
-                                //         .attr("stroke-dashoffset", totalLength)
-                                //         .transition()
-                                //         .duration(2000)
-                                //         .ease(d3.easeLinear)
-                                //         .attr("stroke-dashoffset", 0);
-                                // }
+                                // Add the dots for each data point
+                                svg
+                                    .selectAll(".dot")
+                                    .data(data)
+                                    .enter()
+                                    .append("circle")
+                                    .attr("class", "dot")
+                                    .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                                    .attr("cy", (d) => yScale(d.points))
+                                    .attr("r", 4)
+                                    .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                                    .on("mouseover", (event, d) => {
+                                        tooltip
+                                            .style("display", "block")
+                                            .style("left", event.pageX + 10 + "px")
+                                            .style("top", event.pageY - 10 + "px")
+                                            .html(`Year: ${d.year}<br/>Points: ${d.points}`);
+                                    })
+                                    .on("mouseout", () => {
+                                        tooltip.style("display", "none");
+                                    });
                             }
                             // Listen for change in driver selection
                             const driverSelect1 = document.getElementById("driverSelect1");
@@ -1212,6 +1242,11 @@
                             // Add y-axis
                             svg.append("g").attr("class", "y-axis");
 
+                            const tooltip = d3
+                                .select("body")
+                                .append("div")
+                                .attr("class", "tooltip");
+
                             // Function to update the chart based on selected drivers
                             function updateChart2() {
                                 const driverId1 = driverSelect1.value;
@@ -1223,11 +1258,13 @@
                                 const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
                                     year: year,
                                     points: driver1PointsByYear[year],
+                                    driver: 1,
                                 }));
 
                                 const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
                                     year: year,
                                     points: driver2PointsByYear[year],
+                                    driver: 2,
                                 }));
 
                                 const data = driver1Data.concat(driver2Data);
@@ -1281,7 +1318,33 @@
                                         .ease(d3.easeLinear)
                                         .attr("stroke-dashoffset", 0);
                                 }
+
+                                // Remove any existing dots
+                                svg.selectAll(".dot").remove();
+
+                                // Add the dots for each data point
+                                svg
+                                    .selectAll(".dot")
+                                    .data(data)
+                                    .enter()
+                                    .append("circle")
+                                    .attr("class", "dot")
+                                    .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                                    .attr("cy", (d) => yScale(d.points))
+                                    .attr("r", 4)
+                                    .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                                    .on("mouseover", (event, d) => {
+                                        tooltip
+                                            .style("display", "block")
+                                            .style("left", event.pageX + 10 + "px")
+                                            .style("top", event.pageY - 10 + "px")
+                                            .html(`Year: ${d.year}<br/>Fastest Lap: ${d.points}`);
+                                    })
+                                    .on("mouseout", () => {
+                                        tooltip.style("display", "none");
+                                    });
                             }
+
                             // Listen for change in driver selection
                             const driverSelect1 = document.getElementById("driverSelect1");
                             const driverSelect2 = document.getElementById("driverSelect2");
@@ -1290,7 +1353,6 @@
                             driverSelect2.addEventListener("change", updateChart2);
 
                             // Initialize the chart with default drivers
-                            updateButterflyChart(1, 2, "butterflyChart");
                             updateChart2();
                         },
                     });
