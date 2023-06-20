@@ -3,6 +3,12 @@ body {
     font-family: 'F1_Regular', Arial, sans-serif;
 }
 
+#Title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 #header {
     background-color: #333;
     font-family: 'F1_Wide', Arial, sans-serif;
@@ -14,6 +20,30 @@ body {
 #content {
     padding-left: 40px;
     transition: margin-left 0.3s ease;
+}
+
+#Text {
+    display: flex;
+    /*justify-content: center;*/
+    /*align-items: center;*/
+}
+
+#butterflyChart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#chart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#map {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #footer {
