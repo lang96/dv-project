@@ -242,9 +242,9 @@
         const driverSelect2 = document.getElementById("driverSelect2");
 
         driverData.sort(function(a, b) {
-            // Sort the driverData array based on the first letter of the driver's name
-            const nameA = a.forename.charAt(0).toUpperCase();
-            const nameB = b.forename.charAt(0).toUpperCase();
+            // Sort the driverData array based on the driver's name
+            const nameA = a.forename.toUpperCase();
+            const nameB = b.forename.toUpperCase();
             if (nameA < nameB) {
                 return -1;
             }

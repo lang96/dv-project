@@ -94,6 +94,38 @@
             cursor: pointer;
         }
 
+        .info-box {
+            border: 2px solid #d3d3d3;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 20px;
+            background-color: #f7f7f7;
+            width: 150px;
+            height: 100px;
+        }
+
+        .info-box h2 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+
+        .info-box p {
+            font-size: 16px;
+        }
+
+        .box-container {
+            display: flex;
+            justify-content: right;
+            /*justify-content: space-between;*/
+        }
+
+        .chart {
+            display: flex;
+            justify-content: left;
+            /*justify-content: space-between;*/
+        }
+
+
     </style>
 </head>
 <body>
@@ -101,13 +133,32 @@
     <div class="arrow" id="prevYear">&lt;</div>
     <input type="range" id="year" name="year" min="1950" max="2022" value="2007">
     <div class="arrow" id="nextYear">&gt;</div>
-    <div id="selectedYearDisplay"></div> <!-- New div to display selected year -->
+    <div id="selectedYearDisplay"></div>
 </div>
-<div id="highestPointsDisplay"></div>
-<div id="mostFastestLapsDisplay"></div>
-<div id="mostPodiumFinishesDisplay"></div>
-<div id="constructorDisplay"></div>
-<div id="chart"></div>
+
+<div class="box-container">
+    <div id="chart" class="chart"></div>
+    <div id="highestPointsDisplay" class="info-box">
+        <h2>Driver Champion</h2>
+        <p id="highestPointsDriver"></p>
+    </div>
+    <div id="mostFastestLapsDisplay" class="info-box">
+        <h2>Most Fastest Laps</h2>
+        <p id="mostFastestLapsDriver"></p>
+    </div>
+
+</div>
+<div class="box-container">
+    <div id="mostPodiumFinishesDisplay" class="info-box">
+        <h2>Most Podium</h2>
+        <p id="mostPodiumFinishesDriver"></p>
+    </div>
+    <div id="constructorDisplay" class="info-box">
+        <h2>Constructor Champion</h2>
+        <p id="highestPointsConstructor"></p>
+    </div>
+
+</div>
 
 <script>
 
@@ -190,8 +241,8 @@
                     }
                 });
 
-                const highestPointsDisplay = document.getElementById("highestPointsDisplay");
-                highestPointsDisplay.textContent = `Driver Champion : ${highestPointsDriver}`;
+                const highestPointsDriverElement = document.getElementById("highestPointsDriver");
+                highestPointsDriverElement.textContent = highestPointsDriver;
                 // highestPointsDisplay.textContent = `Driver Champion in ${selectedYear}: ${highestPointsDriver}`;
             },
         });
@@ -246,8 +297,9 @@
                         }
                     }
                 });
-                const mostFastestLapsDisplay = document.getElementById("mostFastestLapsDisplay");
-                mostFastestLapsDisplay.textContent = `Most Fastest Laps: ${mostFastestLapsDriver}`;
+
+                const mostFastestLapsElement = document.getElementById("mostFastestLapsDriver");
+                mostFastestLapsElement.textContent = mostFastestLapsDriver;
                 //mostFastestLapsDisplay.textContent = `Most Fastest Laps in ${selectedYear}: ${mostFastestLapsDriver}`;
             },
         });
@@ -306,8 +358,9 @@
                     }
                 });
 
-                const mostPodiumFinishesDisplay = document.getElementById("mostPodiumFinishesDisplay");
-                mostPodiumFinishesDisplay.textContent = `Most Podiums: ${mostPodiumFinishesDriver}`;
+
+                const mostPodiumFinishesElement = document.getElementById("mostPodiumFinishesDriver");
+                mostPodiumFinishesElement.textContent = mostPodiumFinishesDriver;
                 //mostPodiumFinishesDisplay.textContent = `Most Podiums in ${selectedYear}: ${mostPodiumFinishesDriver}`;
             },
         });
@@ -374,8 +427,9 @@
                                 }
                             }
                         });
-                        const constructorDisplay = document.getElementById("constructorDisplay");
-                        constructorDisplay.textContent = `Constructor Champion: ${highestPointsConstructor}`;
+
+                        const constructorChampionElement = document.getElementById("highestPointsConstructor");
+                        constructorChampionElement.textContent = highestPointsConstructor;
                         //constructorDisplay.textContent = `Constructor Champion in ${selectedYear}: ${highestPointsConstructor}`;
                     },
                 });
@@ -391,7 +445,7 @@
     // Update the selected year display
     function updateSelectedYearDisplay() {
         const selectedYear = parseInt(yearSlider.value);
-        selectedYearDisplay.textContent = `Selected Year: ${selectedYear}`;
+        selectedYearDisplay.textContent = `Year: ${selectedYear}`;
     }
 
     yearSlider.addEventListener("input", function () {
