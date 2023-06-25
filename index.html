@@ -161,7 +161,7 @@
     const mapViewSelect = document.getElementById("mapViewSelect");
 
     let mapView = 1;
-    let selectedDriver = 1;
+    let selectedDriver = 0;
 
     // Function to handle parsed CSV data
     function handleCSVData(filename, results) {
@@ -522,11 +522,13 @@
         const circuitData = csvData["circuits.csv"];
         const qualifyingData = csvData["qualifying.csv"];
 
-        const driver = driverData.find(function (driver) {
-            return driver.driverId === driverId;
-        });
+        if (driverId !== 0) {
+            const driver = driverData.find(function (driver) {
+                return driver.driverId === driverId;
+            });
 
-        const driverName = driver.forename + " " + driver.surname;
+            const driverName = driver.forename + " " + driver.surname;
+        }
 
         // Wins
         const driverWinData = driverResultsData.filter(function (result) {
@@ -922,8 +924,12 @@
         const map = mapViewSelect.value;
 
         if (map) {
-            mapView = parseInt(map);
-            updateMap(mapView, selectedDriver, "map");
+            if (selectedDriver === 0) {
+                updateMap(0, selectedDriver, "map");
+            } else {
+                mapView = parseInt(map);
+                updateMap(mapView, selectedDriver, "map");
+            }
         }
     });
 

@@ -52,6 +52,8 @@
 
 <div id="map"></div>
 
+<div id="con_chart"></div>
+
 <div id="tooltip" style="position: absolute; opacity: 0;"></div>
 
 <div id="footer">
@@ -79,7 +81,7 @@
 
     // Read and parse multiple CSV files
     const files = ["assets/data/circuits.csv", "assets/data/drivers.csv", "assets/data/results.csv", "assets/data/races.csv",
-        "assets/data/driver_standings.csv" , "assets/data/qualifying.csv"];
+        "assets/data/driver_standings.csv" , "assets/data/qualifying.csv", "assets/data/constructors.csv", "assets/data/constructor_standings.csv"];
     let fileCount = 0;
 
     // Function to populate the driver dropdowns
@@ -137,6 +139,101 @@
                 console.error(error);
             });
     });
+
+    function updateChart(chartContainerId) {
+
+        const circuitData = csvData["circuits.csv"];
+        const raceData = csvData["races.csv"];
+        const constructorData = csvData["constructors.csv"];
+        const constructorStandingsData = csvData["constructor_standings.csv"];
+
+        // Prepare the data for the chart
+        const chartData = [];
+
+        const test = constructorStandingsData.find(function (constr) {
+            return constr.constructorStandingsId === 1;
+        });
+
+        console.log(test);
+
+        constructorStandingsData.forEach(function(d) {
+            const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+            const race = raceData.find(race => race.raceId === d.raceId);
+            const circuit = circuitData.find(circuit => circuit.circuitId === race.circuitId);
+
+            chartData.push({
+                circuit: circuit.country,
+                constructor: constructor.name,
+                points: +d.points
+            });
+        });
+
+        console.log(chartData);
+
+        // Set up the chart dimensions
+        const margin = { top: 20, right: 20, bottom: 30, left: 100 };
+        const width = 600 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        // Create the SVG container
+        const svg = d3.select("#" + chartContainerId)
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Group the data by circuit and constructor
+        const nestedData = d3.nest()
+            .key(d => d.circuit)
+            .key(d => d.constructor)
+            .entries(chartData);
+
+        // Stack the data for each circuit
+        const stack = d3.stack()
+            .keys(nestedData[0].values.map(d => d.key))
+            .value((d, key) => d.values.find(item => item.key === key).value);
+
+        const stackedData = stack(nestedData);
+
+        // Define the scales
+        const xScale = d3.scaleLinear()
+            .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1])])
+            .range([0, width]);
+
+        const yScale = d3.scaleBand()
+            .domain(nestedData.map(d => d.key))
+            .range([0, height])
+            .padding(0.1);
+
+        // Create the stacked bar chart
+        svg.selectAll(".bar")
+            .data(stackedData)
+            .enter()
+            .append("g")
+            .attr("fill", (d, i) => d3.schemeCategory10[i])
+            .selectAll("rect")
+            .data(d => d)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", d => xScale(d[0]))
+            .attr("y", d => yScale(d.data.key))
+            .attr("width", d => xScale(d[1]) - xScale(d[0]))
+            .attr("height", yScale.bandwidth());
+
+        // Add the x-axis
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(xScale));
+
+        // Add the y-axis
+        svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(yScale));
+
+    }
 
     function updateMap(map, driverId, chartContainerId) {
 
@@ -559,6 +656,8 @@
             updateMap(mapView, selectedDriver, "map");
         }
     });
+
+    updateChart("con_chart");
 
 </script>
 
