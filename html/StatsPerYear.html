@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stats</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+
+        @font-face {
+            font-family: 'F1_Regular';
+            src: url('Formula1-Regular_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Bold';
+            src: url('Formula1-Bold_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Wide';
+            src: url('Formula1-Wide_web_0.ttf') format('truetype');
+        }
+
+        .range-slider {
+            position: relative;
+            width: 300px;
+            margin: 20px auto;
+        }
+
+        .range-slider input {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #d3d3d3, #ff0000);
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .range-slider input:hover {
+            opacity: 1;
+        }
+
+        .range-slider input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff0000;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .range-slider input::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border: 0;
+            border-radius: 50%;
+            background: #ff0000;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Arrow buttons */
+        .arrow {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #d3d3d3;
+            border-radius: 50%;
+            background: #ef4545;
+            display: inline-block;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.2s;
+            color: #fff;
+        }
+
+        .arrow:hover {
+            background: #d3d3d3;
+        }
+
+        .line {
+            fill: none;
+            stroke-width: 2px;
+            transition: stroke-width 0.2s;
+        }
+
+        .line:hover {
+            stroke-width: 4px;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-container {
+            margin-right: 10px;
+        }
+
+        .chart {
+            height: 400px;
+        }
+
+        .box-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .box-row {
+            display: flex;
+            padding-top: 20px;
+        }
+
+        .info-box {
+            border: 2px solid #d3d3d3;
+            border-radius: 8px;
+            padding: 10px;
+            margin-left: 10px;
+            background-color: #f7f7f7;
+            width: 200px;
+            height: 120px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-wrap: wrap;
+            }
+
+            .chart-container {
+                margin-right: 0;
+            }
+
+            .chart {
+                width: 100%;
+                max-width: none;
+            }
+
+            .box-container {
+                margin: 10px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="range-slider">
+    <div class="arrow" id="prevYear">&lt;</div>
+    <input type="range" id="year" name="year" min="1950" max="2022" value="2007">
+    <div class="arrow" id="nextYear">&gt;</div>
+    <div id="selectedYearDisplay"></div>
+</div>
+
+<div class="container">
+    <div class="chart-container">
+        <div id="chart" class="chart"></div>
+    </div>
+    <div class="box-container">
+        <div class="box-row">
+            <div id="highestPointsDisplay" class="info-box">
+                <h2>Driver Champion</h2>
+                <p id="highestPointsDriver"></p>
+            </div>
+            <div id="mostFastestLapsDisplay" class="info-box">
+                <h2>Most Fastest Laps</h2>
+                <p id="mostFastestLapsDriver"></p>
+            </div>
+        </div>
+        <div class="box-row">
+            <div id="mostPodiumFinishesDisplay" class="info-box">
+                <h2>Most <br> Podiums</h2>
+                <p id="mostPodiumFinishesDriver"></p>
+            </div>
+            <div id="constructorDisplay" class="info-box">
+                <h2>Constructor Champion</h2>
+                <p id="highestPointsConstructor"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    let drivers = {};
+    let races = {};
+
+    Papa.parse("assets/data/drivers.csv", {
+        header: true,
+        download: true,
+        complete: function (driversData) {
+            drivers = driversData.data.reduce((acc, driver) => {
+                acc[driver.driverId] = driver.forename + " " + driver.surname;
+                return acc;
+            }, {});
+        },
+    });
+
+    // Load the race data
+    Papa.parse("assets/data/races.csv", {
+        header: true,
+        download: true,
+        complete: function (racesData) {
+            races = racesData.data.reduce((acc, race) => {
+                acc[race.raceId] = race.year;
+                return acc;
+            }, {});
+        },
+    });
+
+    function findDriverWithHighestPointsByYear() {
+        const yearSlider = document.getElementById("year");
+        const selectedYear = parseInt(yearSlider.value);
+
+        // Load the result data
+        Papa.parse("assets/data/results.csv", {
+            header: true,
+            download: true,
+            complete: function (resultsData) {
+                // Getting the sum of points by year for each driver
+                function getSumPointsByYear(driverId) {
+                    const sumPointsByYear = {};
+
+                    const driverResults = resultsData.data.filter(
+                        (result) => result.driverId === driverId
+                    );
+
+                    const resultsByYear = driverResults.reduce((acc, result) => {
+                        const raceYear = races[result.raceId];
+                        if (!acc[raceYear]) {
+                            acc[raceYear] = [];
+                        }
+                        acc[raceYear].push(result);
+                        return acc;
+                    }, {});
+
+                    Object.entries(resultsByYear).forEach(([year, results]) => {
+                        const sumPoints = results.reduce(
+                            (sum, result) => sum + parseInt(result.points),
+                            0
+                        );
+                        sumPointsByYear[year] = sumPoints;
+                    });
+
+                    return sumPointsByYear;
+                }
+
+                let highestPoints = -1;
+                let highestPointsDriver = '';
+
+                Object.keys(drivers).forEach((driverId) => {
+                    const sumPointsByYear = getSumPointsByYear(driverId);
+
+                    if (sumPointsByYear[selectedYear]) {
+                        const points = sumPointsByYear[selectedYear];
+
+                        if (points > highestPoints) {
+                            highestPoints = points;
+                            highestPointsDriver = drivers[driverId];
+                        }
+                    }
+                });
+
+                const highestPointsDriverElement = document.getElementById("highestPointsDriver");
+                highestPointsDriverElement.textContent = highestPointsDriver;
+                // highestPointsDisplay.textContent = `Driver Champion in ${selectedYear}: ${highestPointsDriver}`;
+            },
+        });
+    }
+
+    function findDriverWithMostFastestLapsByYear() {
+        const yearSlider = document.getElementById("year");
+        const selectedYear = parseInt(yearSlider.value);
+
+        // Load the result data
+        Papa.parse("assets/data/results.csv", {
+            header: true,
+            download: true,
+            complete: function (resultsData) {
+
+                function getCountFastestLapsByYear(driverId) {
+                    const countFastestLapsByYear = {};
+
+                    const driverResults = resultsData.data.filter(
+                        (result) => result.driverId === driverId && result.rank === "1"
+                    );
+
+                    const resultsByYear = driverResults.reduce((acc, result) => {
+                        const raceYear = races[result.raceId];
+                        if (!acc[raceYear]) {
+                            acc[raceYear] = [];
+                        }
+                        acc[raceYear].push(result);
+                        return acc;
+                    }, {});
+
+                    Object.entries(resultsByYear).forEach(([year, results]) => {
+                        const countFastestLaps = results.length;
+                        countFastestLapsByYear[year] = countFastestLaps;
+                    });
+
+                    return countFastestLapsByYear;
+                }
+
+                let mostFastestLaps = -1;
+                let mostFastestLapsDriver = '';
+
+                Object.keys(drivers).forEach((driverId) => {
+                    const countFastestLapsByYear = getCountFastestLapsByYear(driverId);
+
+                    if (countFastestLapsByYear[selectedYear]) {
+                        const fastestLaps = countFastestLapsByYear[selectedYear];
+
+                        if (fastestLaps > mostFastestLaps) {
+                            mostFastestLaps = fastestLaps;
+                            mostFastestLapsDriver = drivers[driverId];
+                        }
+                    }
+                });
+
+                const mostFastestLapsElement = document.getElementById("mostFastestLapsDriver");
+                mostFastestLapsElement.textContent = mostFastestLapsDriver;
+                //mostFastestLapsDisplay.textContent = `Most Fastest Laps in ${selectedYear}: ${mostFastestLapsDriver}`;
+            },
+        });
+    }
+
+    function findDriverWithMostPodiumFinishesByYear() {
+        const yearSlider = document.getElementById("year");
+        const selectedYear = parseInt(yearSlider.value);
+
+        // Load the result data
+        Papa.parse("assets/data/results.csv", {
+            header: true,
+            download: true,
+            complete: function (resultsData) {
+                function getCountPodiumFinishesByYear(driverId) {
+                    const countPodiumFinishesByYear = {};
+
+                    const driverResults = resultsData.data.filter(
+                        (result) => result.driverId === driverId && parseInt(result.position) <= 3
+                    );
+
+                    const resultsByYear = driverResults.reduce((acc, result) => {
+                        const raceYear = races[result.raceId];
+                        if (!acc[raceYear]) {
+                            acc[raceYear] = [];
+                        }
+                        acc[raceYear].push(result);
+                        return acc;
+                    }, {});
+
+                    // Count podium finishes by year
+                    Object.entries(resultsByYear).forEach(([year, results]) => {
+                        const countPodiumFinishes = results.length;
+                        countPodiumFinishesByYear[year] = countPodiumFinishes;
+                    });
+
+                    return countPodiumFinishesByYear;
+                }
+
+                let mostPodiumFinishes = -1;
+                let mostPodiumFinishesDriver = '';
+
+                // Iterate over all drivers
+                Object.keys(drivers).forEach((driverId) => {
+                    const countPodiumFinishesByYear = getCountPodiumFinishesByYear(driverId);
+
+                    // Check if the selected year exists in the results
+                    if (countPodiumFinishesByYear[selectedYear]) {
+                        const podiumFinishes = countPodiumFinishesByYear[selectedYear];
+
+                        // Check if the current driver has the most podium finishes for the selected year
+                        if (podiumFinishes > mostPodiumFinishes) {
+                            mostPodiumFinishes = podiumFinishes;
+                            mostPodiumFinishesDriver = drivers[driverId];
+                        }
+                    }
+                });
+
+
+                const mostPodiumFinishesElement = document.getElementById("mostPodiumFinishesDriver");
+                mostPodiumFinishesElement.textContent = mostPodiumFinishesDriver;
+                //mostPodiumFinishesDisplay.textContent = `Most Podiums in ${selectedYear}: ${mostPodiumFinishesDriver}`;
+            },
+        });
+    }
+    function findConstructorWithHighestPointsByYear() {
+        const yearSlider = document.getElementById("year");
+        const selectedYear = parseInt(yearSlider.value);
+
+        Papa.parse("assets/data/constructors.csv", {
+            header: true,
+            download: true,
+            complete: function (constructorsData) {
+                const constructors = constructorsData.data.reduce((acc, constructor) => {
+                    acc[constructor.constructorId] = constructor.name;
+                    return acc;
+                }, {});
+
+                Papa.parse("assets/data/results.csv", {
+                    header: true,
+                    download: true,
+                    complete: function (resultsData) {
+                        function getSumPointsByYear(constructorId) {
+                            const sumPointsByYear = {};
+
+                            const constructorResults = resultsData.data.filter(
+                                (result) => result.constructorId === constructorId
+                            );
+
+                            const resultsByYear = constructorResults.reduce((acc, result) => {
+                                const raceYear = races[result.raceId];
+                                if (!acc[raceYear]) {
+                                    acc[raceYear] = [];
+                                }
+                                acc[raceYear].push(result);
+                                return acc;
+                            }, {});
+
+                            // Calculate sum of points by year
+                            Object.entries(resultsByYear).forEach(([year, results]) => {
+                                const sumPoints = results.reduce(
+                                    (sum, result) => sum + parseInt(result.points),
+                                    0
+                                );
+                                sumPointsByYear[year] = sumPoints;
+                            });
+
+                            return sumPointsByYear;
+                        }
+
+                        let highestPoints = -1;
+                        let highestPointsConstructor = '';
+
+                        Object.keys(constructors).forEach((constructorId) => {
+                            const sumPointsByYear = getSumPointsByYear(constructorId);
+
+                            // Check if the selected year exists in the results
+                            if (sumPointsByYear[selectedYear]) {
+                                const points = sumPointsByYear[selectedYear];
+
+                                // Check if the current constructor has the highest points for the selected year
+                                if (points > highestPoints) {
+                                    highestPoints = points;
+                                    highestPointsConstructor = constructors[constructorId];
+                                }
+                            }
+                        });
+
+                        const constructorChampionElement = document.getElementById("highestPointsConstructor");
+                        constructorChampionElement.textContent = highestPointsConstructor;
+                        //constructorDisplay.textContent = `Constructor Champion in ${selectedYear}: ${highestPointsConstructor}`;
+                    },
+                });
+            },
+        });
+    }
+
+    const yearSlider = document.getElementById("year");
+    const prevYearButton = document.getElementById("prevYear");
+    const nextYearButton = document.getElementById("nextYear");
+    const selectedYearDisplay = document.getElementById("selectedYearDisplay");
+
+    // Update the selected year display
+    function updateSelectedYearDisplay() {
+        const selectedYear = parseInt(yearSlider.value);
+        selectedYearDisplay.textContent = `Year: ${selectedYear}`;
+    }
+
+    yearSlider.addEventListener("input", function () {
+        findDriverWithHighestPointsByYear();
+        findDriverWithMostFastestLapsByYear();
+        findDriverWithMostPodiumFinishesByYear();
+        findConstructorWithHighestPointsByYear();
+        updateChart();
+        updateSelectedYearDisplay();
+    });
+
+    prevYearButton.addEventListener("click", function () {
+        yearSlider.stepDown();
+        findDriverWithHighestPointsByYear();
+        findDriverWithMostFastestLapsByYear();
+        findDriverWithMostPodiumFinishesByYear();
+        findConstructorWithHighestPointsByYear();
+        updateChart();
+        updateSelectedYearDisplay();
+    });
+
+    nextYearButton.addEventListener("click", function () {
+        yearSlider.stepUp();
+        findDriverWithHighestPointsByYear();
+        findDriverWithMostFastestLapsByYear();
+        findDriverWithMostPodiumFinishesByYear();
+        findConstructorWithHighestPointsByYear();
+        updateChart();
+        updateSelectedYearDisplay();
+    });
+
+    findDriverWithHighestPointsByYear();
+    findDriverWithMostFastestLapsByYear();
+    findDriverWithMostPodiumFinishesByYear();
+    findConstructorWithHighestPointsByYear();
+    updateChart();
+    updateSelectedYearDisplay();
+</script>
+
+<script>
+    let racesData, driversData, circuitsData, resultsData;
+    let svg;
+
+    const updateChart = () => {
+12
+
+        d3.select("#chart").selectAll("svg").remove();
+
+        // Filter the data for a specific year
+        const selectedYear = yearSlider.value;
+        const filteredRacesData = racesData.filter(race => race.year === selectedYear);
+
+        const circuitNames = filteredRacesData.map(race => {
+            const circuitId = race.circuitId;
+            const circuit = circuitsData.find(circuit => circuit.circuitId === circuitId);
+            return circuit.name;
+        });
+
+        const driverPointsByCircuit = {};
+        resultsData.forEach(result => {
+            const raceId = result.raceId;
+            const driverId = result.driverId;
+            const points = +result.points;
+
+            if (filteredRacesData.some(race => race.raceId === raceId)) {
+                if (!driverPointsByCircuit[driverId]) {
+                    driverPointsByCircuit[driverId] = Array(circuitNames.length).fill(0);
+                }
+
+                const circuitIndex = filteredRacesData.findIndex(race => race.raceId === raceId);
+                driverPointsByCircuit[driverId][circuitIndex] += points;
+            }
+        });
+
+        Object.values(driverPointsByCircuit).forEach(points => {
+            for (let i = 1; i < points.length; i++) {
+                points[i] += points[i - 1];
+            }
+        });
+
+        const driverData = Object.entries(driverPointsByCircuit).map(([driverId, points]) => {
+            const driver = driversData.find(driver => driver.driverId === driverId);
+            const driverName = `${driver.forename} ${driver.surname}`;
+            return { driver: driverName, points };
+        });
+
+        const margin = { top: 50, right: 20, bottom: 30, left: 50 };
+        const width = 800 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        const xScale = d3.scalePoint()
+            .domain(circuitNames)
+            .range([0, width])
+            .padding(0.5);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(driverData, d => d3.max(d.points))])
+            .range([height, 0]);
+
+        const line = d3.line()
+            .x((d, i) => xScale(circuitNames[i]))
+            .y(d => yScale(d));
+
+        svg.selectAll(".line")
+            .data(driverData)
+            .enter()
+            .append("path")
+            .attr("class", "line")
+            .attr("d", d => line(d.points))
+            .style("fill", "none")
+            .style("stroke", (d, i) => d3.schemeCategory10[i % 10])
+            .each(function () {
+                const path = d3.select(this);
+                const totalLength = path.node().getTotalLength();
+
+                path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                    .attr("stroke-dashoffset", totalLength)
+                    .transition()
+                    .duration(2000)
+                    .attr("stroke-dashoffset", 0);
+            })
+            .on("mouseover", (event, d) => {
+                // Increase line width on hover
+                d3.select(event.target)
+                    .style("stroke-width", "4px");
+
+                // Display name and score on hover
+                svg.append("text")
+                    .attr("class", "driver-name")
+                    .attr("x", xScale(circuitNames[circuitNames.length - 5]) )
+                    .attr("y", yScale(d.points[d.points.length - 1]) - 10)
+                    .text(d.driver);
+
+                svg.append("text")
+                    .attr("class", "points-scored")
+                    .attr("x", xScale(circuitNames[circuitNames.length - 5]))
+                    .attr("y", yScale(d.points[d.points.length - 1]) + 10)
+                    .text(d.points[d.points.length - 1]);
+            })
+            .on("mouseout", (event, d) => {
+                d3.select(event.target)
+                    .style("stroke-width", "2px");
+                svg.select(".driver-name").remove(); //When hover outside of the line, remove both
+                svg.select(".points-scored").remove();
+            });
+
+        // X-axis
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(d3.scaleBand().domain([...Array(circuitNames.length).keys()].map(d => d + 1)).range([1, width])));
+
+        // Y-axis
+        svg.append("g")
+            .call(d3.axisLeft(yScale));
+
+        // Chart Title
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+        // .text(`Driver Standings for ${selectedYear}`);
+
+    };
+    Promise.all([
+        d3.csv('assets/data/drivers.csv'),
+        d3.csv('assets/data/races.csv'),
+        d3.csv('assets/data/circuits.csv'),
+        d3.csv('assets/data/results.csv')
+    ]).then(([drivers, races, circuits, results]) => {
+        driversData = drivers;
+        racesData = races;
+        circuitsData = circuits;
+        resultsData = results;
+
+        yearSlider.addEventListener("input", updateChart);
+
+
+        updateChart();
+        updateSelectedYearDisplay();
+    }).catch(error => {
+        console.log(error);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>On The Inside</title>
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
+
+    <style>
+        @font-face {
+            font-family: 'F1_Regular';
+            src: url('Formula1-Regular_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Bold';
+            src: url('Formula1-Bold_web_0.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'F1_Wide';
+            src: url('Formula1-Wide_web_0.ttf') format('truetype');
+        }
+    </style>
+</head>
+<body>
+<div id="header">
+    <h1>On The Inside - Dominance and Glory in Formula 1</h1>
+</div>
+<div id="content">
+    <h2>Welcome to the Formula 1 Dashboard</h2>
+    <p>Select a menu option to view the desired information.</p>
+
+    <div>
+        <select id="mapViewSelect">
+            <option value="1">Wins</option>
+            <option value="2">Podiums</option>
+            <option value="3">Poles</option>
+        </select>
+    </div>
+
+    <br>
+
+    <div>
+        <select id="driverSelect">
+            <option value="">Select Driver</option>
+        </select>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div id="con_chart"></div>
+
+<div id="tooltip" style="position: absolute; opacity: 0;"></div>
+
+<div id="footer">
+    <p>2023 | On The Inside | Presented to you by Arif & Shuhail</p>
+</div>
+
+<script>
+    let csvData = {}; // Object to hold the CSV data
+    const driverSelect = document.getElementById("driverSelect");
+    const mapViewSelect = document.getElementById("mapViewSelect");
+
+    let mapView = 1;
+    let selectedDriver = 1;
+
+    // Read and parse multiple CSV files
+    const files = ["assets/data/csv/circuits.csv", "assets/data/csv/constructor_results.csv", "assets/data/csv/constructor_standings.csv",
+        "assets/data/csv/constructors.csv", "assets/data/csv/driver_standings.csv", "assets/data/csv/drivers.csv",
+        "assets/data/csv/lap_times.csv", "assets/data/csv/pit_stops.csv", "assets/data/csv/qualifying.csv",
+        "assets/data/csv/races.csv", "assets/data/csv/results.csv", "assets/data/csv/sprint_results.csv"];
+
+    // Function to handle parsed CSV data
+    function handleCSVData(filename, results) {
+        csvData[filename] = results.data; // Store the parsed data in the object
+        // console.log(csvData); // Verify the data is stored correctly
+
+        // Check if all CSV files are loaded and populate the driver dropdowns
+        if (filename === "drivers.csv") {
+            // populateDriverDropdown();
+            populateMapDriverDropdown();
+        }
+    }
+
+    files.forEach(function(file) {
+        const filename = file.split('/').pop();
+        fetch(file)
+            .then(response => response.text())
+            .then(csvContent => {
+                Papa.parse(csvContent, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        // Handle the parsed data for each file
+                        csvData[filename] = results.data;
+                        if (filename === "drivers.csv") {
+                            // populateDriverDropdown();
+                            populateMapDriverDropdown();
+                        }
+                    },
+                    error: function(error) {
+                        console.error("Error parsing file:", file);
+                        console.error(error);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error loading CSV file:", file);
+                console.error(error);
+            });
+    });
+
+    // Function to populate the driver dropdowns
+    function populateMapDriverDropdown() {
+        const driverData = csvData["drivers.csv"];
+        console.log("driver",driverData);
+
+        driverData.sort(function(a, b) {
+            // Sort the driverData array based on the first letter of the driver's name
+            const nameA = a.forename.charAt(0).toUpperCase();
+            const nameB = b.forename.charAt(0).toUpperCase();
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameA > nameB) {
+                return 1;
+            }
+            return 0;
+        });
+
+        driverData.forEach(function(driver) {
+            const option = document.createElement("option");
+            option.value = driver.driverId;
+            option.text = driver.forename + " " + driver.surname;
+
+            driverSelect.appendChild(option);
+        });
+    }
+
+    function updateChart(chartContainerId) {
+
+        const circuitData = csvData["circuits.csv"];
+        const raceData = csvData["races.csv"];
+        const constructorData = csvData["constructors.csv"];
+        const constructorStandingsData = csvData["constructor_standings.csv"];
+        const constructorResultsData = csvData["constructor_results.csv"];
+
+        // Prepare the data for the chart
+        const chartData = [];
+
+        constructorStandingsData.forEach(function(d) {
+            const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+
+            if (constructor !== undefined && constructor !== null) {
+                const race = raceData.find(race => race.raceId === d.raceId);
+                const circuit = circuitData.find(circuit => circuit.circuitId === race.circuitId);
+
+                chartData.push({
+                    country: circuit.country,
+                    constructor: constructor.name,
+                    points: +d.points
+                });
+            }
+
+        });
+
+        console.log(chartData);
+
+        // Set up the chart dimensions
+        const margin = { top: 50, right: 50, bottom: 50, left: 250 };
+        const width = 1500 - margin.left - margin.right;
+        const height = 1000 - margin.top - margin.bottom;
+
+        // Create the SVG container
+        const svg = d3.select("#" + chartContainerId)
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Group the data by constructor and country
+        const nestedData = Array.from(d3.group(chartData, d => d.constructor, d => d.country));
+
+// Define the unique constructors and countries
+        const constructors = Array.from(new Set(chartData.map(d => d.constructor)));
+        const countries = Array.from(new Set(chartData.map(d => d.country)));
+
+// Define the color scale for constructors
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(constructors);
+
+// Calculate the maximum points across all constructors
+        const maxPoints = d3.max(chartData, d => d.points);
+
+// Define the scales
+        const xScale = d3.scaleLinear()
+            .domain([0, maxPoints])
+            .range([0, width]);
+
+        const yScale = d3.scaleBand()
+            .domain(countries)
+            .range([0, height])
+            .padding(0.1);
+
+// Create the stacked bar chart
+        svg.selectAll(".bar")
+            .data(nestedData)
+            .enter()
+            .append("g")
+            .attr("fill", d => colorScale(d[0]))
+            .selectAll("rect")
+            .data(d => d[1])
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", 0)
+            .attr("y", d => yScale(d[0]))
+            .attr("width", d => xScale(d[1].points))
+            .attr("height", yScale.bandwidth());
+
+// Add the x-axis
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(xScale));
+
+// Add the y-axis
+        svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(yScale));
+
+    }
+
+    setTimeout(function() {
+        updateChart("con_chart");
+    }, 1000);
+
+</script>
+
+</body>
+</html>
+
+<script>
+    // function updateMap(map, driverId, chartContainerId) {
+    //
+    //     const driverData = csvData["drivers.csv"];
+    //     const driverResultsData = csvData["results.csv"];
+    //     const raceData = csvData["races.csv"];
+    //     const circuitData = csvData["circuits.csv"];
+    //     const qualifyingData = csvData["qualifying.csv"];
+    //
+    //     const driver = driverData.find(function (driver) {
+    //         return driver.driverId === driverId;
+    //     });
+    //
+    //     const driverName = driver.forename + " " + driver.surname;
+    //
+    //     // Wins
+    //     const driverWinData = driverResultsData.filter(function (result) {
+    //         return result.driverId === driverId && result.position === 1;
+    //     })
+    //     const winRaceIds = driverWinData.map(function (result) {
+    //         return result.raceId;
+    //     });
+    //     const winRaces = raceData.filter(function (result) {
+    //         return winRaceIds.includes(result.raceId);
+    //     });
+    //     const winCircuitIds = winRaces.map(function (result) {
+    //         return result.circuitId;
+    //     });
+    //     const winCircuits = circuitData.filter(function (result) {
+    //         return winCircuitIds.includes(result.circuitId);
+    //     });
+    //
+    //     const countryWins = {};
+    //     winRaces.forEach(function (race) {
+    //         const circuit = winCircuits.find(function (circuit) {
+    //             return circuit.circuitId === race.circuitId;
+    //         });
+    //
+    //         if (circuit) {
+    //             const country = circuit.country;
+    //             if (countryWins[country]) {
+    //                 countryWins[country]++;
+    //             } else {
+    //                 countryWins[country] = 1;
+    //             }
+    //         }
+    //     });
+    //
+    //     // Podiums
+    //     const driverPodiumData = driverResultsData.filter(function (result) {
+    //         return result.driverId === driverId && result.position <= 3;
+    //     });
+    //     const podiumRaceIds = driverPodiumData.map(function (result) {
+    //         return result.raceId;
+    //     });
+    //     const podiumRaces = raceData.filter(function (result) {
+    //         return podiumRaceIds.includes(result.raceId);
+    //     });
+    //     const podiumCircuitIds = podiumRaces.map(function (result) {
+    //         return result.circuitId;
+    //     });
+    //     const podiumCircuits = circuitData.filter(function (result) {
+    //         return podiumCircuitIds.includes(result.circuitId);
+    //     });
+    //
+    //     const countryPodiums = {};
+    //     podiumRaces.forEach(function (race) {
+    //         const circuit = podiumCircuits.find(function (circuit) {
+    //             return circuit.circuitId === race.circuitId;
+    //         });
+    //
+    //         if (circuit) {
+    //             const country = circuit.country;
+    //             if (countryPodiums[country]) {
+    //                 countryPodiums[country]++;
+    //             } else {
+    //                 countryPodiums[country] = 1;
+    //             }
+    //         }
+    //     });
+    //
+    //     // Poles
+    //     const driverPoleData = qualifyingData.filter(function (result) {
+    //         return result.driverId === driverId && result.position === 1;
+    //     });
+    //     const poleRaceIds = driverPoleData.map(function (result) {
+    //         return result.raceId;
+    //     });
+    //     const poleRaces = raceData.filter(function (result) {
+    //         return poleRaceIds.includes(result.raceId);
+    //     });
+    //     const poleCircuitIds = poleRaces.map(function (result) {
+    //         return result.circuitId;
+    //     });
+    //     const poleCircuits = circuitData.filter(function (result) {
+    //         return poleCircuitIds.includes(result.circuitId);
+    //     });
+    //
+    //     const countryPoles = {};
+    //     poleRaces.forEach(function (race) {
+    //         const circuit = poleCircuits.find(function (circuit) {
+    //             return circuit.circuitId === race.circuitId;
+    //         });
+    //
+    //         if (circuit) {
+    //             const country = circuit.country;
+    //             if (countryPoles[country]) {
+    //                 countryPoles[country]++;
+    //             } else {
+    //                 countryPoles[country] = 1;
+    //             }
+    //         }
+    //     });
+    //
+    //     // Max values for scaling
+    //     const maxWins = Math.max(...Object.values(countryWins));
+    //     const maxPodiums = Math.max(...Object.values(countryPodiums));
+    //     const maxPoles = Math.max(...Object.values(countryPoles));
+    //
+    //     if (map === 1) {
+    //
+    //         const chartContainer = document.getElementById(chartContainerId);
+    //         chartContainer.innerHTML = "";
+    //
+    //         const width = 1000;
+    //         const height = 600;
+    //
+    //         const svg = d3.select("#" + chartContainerId)
+    //             .append("svg")
+    //             .attr("width", width)
+    //             .attr("height", height);
+    //
+    //         // Define the projection for the map (you can choose a different one if desired)
+    //         const projection = d3.geoMercator()
+    //             .scale(130)
+    //             .translate([width / 2, height / 1.4]);
+    //
+    //         // Create a path generator
+    //         const path = d3.geoPath().projection(projection);
+    //         const tooltip = d3.select("#tooltip");
+    //
+    //         // Load the map data
+    //         d3.json("assets/data/countries.geojson").then(function(mapData) {
+    //             // Draw the map
+    //             svg.selectAll("path")
+    //                 .data(mapData.features)
+    //                 .enter()
+    //                 .append("path")
+    //                 .attr("d", path)
+    //                 .attr("fill", function(d) {
+    //                     // Lookup the number of wins for the current country
+    //                     const wins = countryWins[d.properties.ADMIN];
+    //                     if (wins) {
+    //                         // Replace the color based on the number of wins
+    //                         return d3.interpolateReds(wins / maxWins);
+    //                     } else {
+    //                         return "#ccc"; // Default color for countries without data
+    //                     }
+    //                 })
+    //                 // Add hover actions and tooltip display
+    //                 .on("mouseover", function(event, d) {
+    //                     // Increase the opacity of the hovered country
+    //                     d3.select(this).style("opacity", 0.7);
+    //
+    //                     const wins = countryWins[d.properties.ADMIN];
+    //                     const winsText = wins !== null && wins !== undefined ? wins : 0;
+    //
+    //                     // Position and display the tooltip
+    //                     tooltip.style("left", event.pageX + "px")
+    //                         .style("top", event.pageY + "px")
+    //                         .style("opacity", 1)
+    //                         .html(`<strong>${d.properties.ADMIN}</strong><br>Wins: ${winsText}`);
+    //                 })
+    //                 .on("mouseout", function() {
+    //                     // Reset the opacity and hide the tooltip
+    //                     d3.select(this).style("opacity", 1);
+    //                     tooltip.style("opacity", 0);
+    //                 });
+    //         });
+    //
+    //         // Create a zoom behavior
+    //         const zoom = d3.zoom()
+    //             .scaleExtent([1, 8]) // Set the zoom scale range
+    //             .on("zoom", zoomed);
+    //
+    //         // Apply the zoom behavior to the SVG container
+    //         svg.call(zoom);
+    //
+    //         // Define the zoom handler function
+    //         function zoomed(event) {
+    //             // Get the current zoom transformation
+    //             const { transform } = event;
+    //
+    //             // Apply the transformation to the map features
+    //             svg.selectAll("path")
+    //                 .attr("transform", transform);
+    //         }
+    //
+    //         // Add a listener for the mouse scroll event
+    //         svg.on("wheel", function(event) {
+    //             // Prevent the default scroll behavior
+    //             event.preventDefault();
+    //
+    //             // Get the current zoom scale
+    //             const currentScale = d3.zoomTransform(this).k;
+    //
+    //             // Calculate the new scale based on the scroll event
+    //             const newScale = currentScale - event.deltaY * 0.01;
+    //
+    //             // Apply the new scale with a smooth transition
+    //             svg.transition().duration(200).call(zoom.scaleTo, newScale);
+    //         });
+    //
+    //     } else if (map === 2) {
+    //
+    //         const chartContainer = document.getElementById(chartContainerId);
+    //         chartContainer.innerHTML = "";
+    //
+    //         const width = 1000;
+    //         const height = 600;
+    //
+    //         const svg = d3.select("#" + chartContainerId)
+    //             .append("svg")
+    //             .attr("width", width)
+    //             .attr("height", height);
+    //
+    //         // Define the projection for the map (you can choose a different one if desired)
+    //         const projection = d3.geoMercator()
+    //             .scale(130)
+    //             .translate([width / 2, height / 1.4]);
+    //
+    //         // Create a path generator
+    //         const path = d3.geoPath().projection(projection);
+    //         const tooltip = d3.select("#tooltip");
+    //
+    //         // Load the map data
+    //         d3.json("assets/data/countries.geojson").then(function(mapData) {
+    //             // Draw the map
+    //             svg.selectAll("path")
+    //                 .data(mapData.features)
+    //                 .enter()
+    //                 .append("path")
+    //                 .attr("d", path)
+    //                 .attr("fill", function(d) {
+    //                     // Lookup the number of podiums for the current country
+    //                     const podiums = countryPodiums[d.properties.ADMIN];
+    //                     if (podiums) {
+    //                         // Replace the color based on the number of podiums
+    //                         return d3.interpolateGreens(podiums / maxPodiums);
+    //                     } else {
+    //                         return "#ccc"; // Default color for countries without data
+    //                     }
+    //                 })
+    //                 // Add hover actions and tooltip display
+    //                 .on("mouseover", function(event, d) {
+    //                     // Increase the opacity of the hovered country
+    //                     d3.select(this).style("opacity", 0.7);
+    //
+    //                     const podiums = countryPodiums[d.properties.ADMIN];
+    //                     const podiumsText = podiums !== null && podiums !== undefined ? podiums : 0;
+    //
+    //                     // Position and display the tooltip
+    //                     tooltip.style("left", event.pageX + "px")
+    //                         .style("top", event.pageY + "px")
+    //                         .style("opacity", 1)
+    //                         .html(`<strong>${d.properties.ADMIN}</strong><br>Podiums: ${podiumsText}`);
+    //                 })
+    //                 .on("mouseout", function() {
+    //                     // Reset the opacity and hide the tooltip
+    //                     d3.select(this).style("opacity", 1);
+    //                     tooltip.style("opacity", 0);
+    //                 });
+    //         });
+    //
+    //         // Create a zoom behavior
+    //         const zoom = d3.zoom()
+    //             .scaleExtent([1, 8]) // Set the zoom scale range
+    //             .on("zoom", zoomed);
+    //
+    //         // Apply the zoom behavior to the SVG container
+    //         svg.call(zoom);
+    //
+    //         // Define the zoom handler function
+    //         function zoomed(event) {
+    //             // Get the current zoom transformation
+    //             const { transform } = event;
+    //
+    //             // Apply the transformation to the map features
+    //             svg.selectAll("path")
+    //                 .attr("transform", transform);
+    //         }
+    //
+    //         // Add a listener for the mouse scroll event
+    //         svg.on("wheel", function(event) {
+    //             // Prevent the default scroll behavior
+    //             event.preventDefault();
+    //
+    //             // Get the current zoom scale
+    //             const currentScale = d3.zoomTransform(this).k;
+    //
+    //             // Calculate the new scale based on the scroll event
+    //             const newScale = currentScale - event.deltaY * 0.01;
+    //
+    //             // Apply the new scale with a smooth transition
+    //             svg.transition().duration(200).call(zoom.scaleTo, newScale);
+    //         });
+    //
+    //     } else if (map === 3) {
+    //
+    //         const chartContainer = document.getElementById(chartContainerId);
+    //         chartContainer.innerHTML = "";
+    //
+    //         const width = 1000;
+    //         const height = 600;
+    //
+    //         const svg = d3.select("#" + chartContainerId)
+    //             .append("svg")
+    //             .attr("width", width)
+    //             .attr("height", height);
+    //
+    //         // Define the projection for the map (you can choose a different one if desired)
+    //         const projection = d3.geoMercator()
+    //             .scale(130)
+    //             .translate([width / 2, height / 1.4]);
+    //
+    //         // Create a path generator
+    //         const path = d3.geoPath().projection(projection);
+    //         const tooltip = d3.select("#tooltip");
+    //
+    //         // Load the map data
+    //         d3.json("assets/data/countries.geojson").then(function(mapData) {
+    //             // Draw the map
+    //             svg.selectAll("path")
+    //                 .data(mapData.features)
+    //                 .enter()
+    //                 .append("path")
+    //                 .attr("d", path)
+    //                 .attr("fill", function(d) {
+    //                     // Lookup the number of poles for the current country
+    //                     const poles = countryPoles[d.properties.ADMIN];
+    //                     if (poles) {
+    //                         // Replace the color based on the number of wins
+    //                         return d3.interpolateBlues(poles / maxPoles);
+    //                     } else {
+    //                         return "#ccc"; // Default color for countries without data
+    //                     }
+    //                 })
+    //                 // Add hover actions and tooltip display
+    //                 .on("mouseover", function(event, d) {
+    //                     // Increase the opacity of the hovered country
+    //                     d3.select(this).style("opacity", 0.7);
+    //
+    //                     const poles = countryPoles[d.properties.ADMIN];
+    //                     const polesText = poles !== null && poles !== undefined ? poles : 0;
+    //
+    //                     // Position and display the tooltip
+    //                     tooltip.style("left", event.pageX + "px")
+    //                         .style("top", event.pageY + "px")
+    //                         .style("opacity", 1)
+    //                         .html(`<strong>${d.properties.ADMIN}</strong><br>Poles: ${polesText}`);
+    //                 })
+    //                 .on("mouseout", function() {
+    //                     // Reset the opacity and hide the tooltip
+    //                     d3.select(this).style("opacity", 1);
+    //                     tooltip.style("opacity", 0);
+    //                 });
+    //         });
+    //
+    //         // Create a zoom behavior
+    //         const zoom = d3.zoom()
+    //             .scaleExtent([1, 8]) // Set the zoom scale range
+    //             .on("zoom", zoomed);
+    //
+    //         // Apply the zoom behavior to the SVG container
+    //         svg.call(zoom);
+    //
+    //         // Define the zoom handler function
+    //         function zoomed(event) {
+    //             // Get the current zoom transformation
+    //             const { transform } = event;
+    //
+    //             // Apply the transformation to the map features
+    //             svg.selectAll("path")
+    //                 .attr("transform", transform);
+    //         }
+    //
+    //         // Add a listener for the mouse scroll event
+    //         svg.on("wheel", function(event) {
+    //             // Prevent the default scroll behavior
+    //             event.preventDefault();
+    //
+    //             // Get the current zoom scale
+    //             const currentScale = d3.zoomTransform(this).k;
+    //
+    //             // Calculate the new scale based on the scroll event
+    //             const newScale = currentScale - event.deltaY * 0.01;
+    //
+    //             // Apply the new scale with a smooth transition
+    //             svg.transition().duration(200).call(zoom.scaleTo, newScale);
+    //         });
+    //
+    //     }
+    //
+    // }
+    //
+    // mapViewSelect.addEventListener("change", function() {
+    //     const map = mapViewSelect.value;
+    //
+    //     if (map) {
+    //         mapView = parseInt(map);
+    //         updateMap(mapView, selectedDriver, "map");
+    //     }
+    // });
+    //
+    // driverSelect.addEventListener("change", function () {
+    //     const driver = driverSelect.value;
+    //
+    //     if (driver) {
+    //         selectedDriver = parseInt(driver);
+    //         updateMap(mapView, selectedDriver, "map");
+    //     }
+    // });
+</script>

@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+  <title>On The Inside</title>
+  <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2418/2418779.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    @font-face {
+      font-family: 'F1_Regular';
+      src: url('Formula1-Regular_web_0.ttf') format('truetype');
+    }
+
+    @font-face {
+      font-family: 'F1_Bold';
+      src: url('Formula1-Bold_web_0.ttf') format('truetype');
+    }
+
+    @font-face {
+      font-family: 'F1_Wide';
+      src: url('Formula1-Wide_web_0.ttf') format('truetype');
+    }
+  </style>
+
+</head>
+
+<body>
+
+<div id="header">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/F1.svg/1024px-F1.svg.png" alt="F1 Logo" class="header_logo">
+  <h1>On The Inside - </h1>
+  <h2>Dominance and Glory in Formula 1</h2>
+</div>
+
+<br><br><br>
+
+<!-- Overview Section -->
+
+<div class="subheader">
+  <h1>Overview</h1>
+</div>
+
+<div class="container">
+
+  <div class="left">
+
+    <div id="chart" class="chart"></div>
+
+  </div>
+
+  <div class="right">
+
+    <div class="top-section">
+      <div class="range-slider">
+        <div class="arrow" id="prevYear">&lt;</div>
+        <input type="range" id="year" name="year" min="1950" max="2022" value="2007">
+        <div class="arrow" id="nextYear">&gt;</div>
+        <div id="selectedYearDisplay"></div>
+      </div>
+    </div>
+
+    <div class="bottom-section">
+      <div class="box-container">
+        <div class="box-row">
+          <div id="highestPointsDisplay" class="info-box driver-champion">
+            <h3>Driver <br> Champion</h3>
+            <p id="highestPointsDriver"></p>
+          </div>
+          <div id="constructorDisplay" class="info-box constructor-champion">
+            <h3>Constructor Champion</h3>
+            <p id="highestPointsConstructor"></p>
+          </div>
+        </div>
+        <div class="box-row">
+          <div id="mostPodiumFinishesDisplay" class="info-box most-podiums">
+            <h3>Most <br> Podiums</h3>
+            <p id="mostPodiumFinishesDriver"></p>
+          </div>
+          <div id="mostFastestLapsDisplay" class="info-box most-fastest-laps">
+            <h3>Most <br> Fastest Laps</h3>
+            <p id="mostFastestLapsDriver"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- End -->
+
+<hr class="line-break">
+
+<!-- Map Section -->
+
+<div class="map_container">
+
+  <div class="map_filter">
+    <div class="dropdown_left">
+      <div>
+        <select id="mapViewSelect">
+          <option value="1">Wins</option>
+          <option value="2">Podiums</option>
+          <option value="3">Poles</option>
+        </select>
+      </div>
+    </div>
+    <div class="dropdown_right">
+      <div>
+        <select id="driverSelect">
+          <option value="">Select Driver</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="map_viz">
+    <div id="map"></div>
+    <!-- <div id="map_legend"></div> -->
+    <div id="tooltip" style="position: absolute; opacity: 0;"></div>
+  </div>
+
+</div>
+
+<!-- End -->
+
+<br>
+
+<!-- Driver Comparison Section -->
+
+<div class="subheader">
+  <h1>Driver Comparison</h1>
+</div>
+
+<div class="comparison_container">
+
+  <br>
+
+  <div class="filter_display">
+
+    <div class="driver1_dropdown">
+      <select id="driverSelect1">
+        <option value="">Select driver 1</option>
+      </select>
+    </div>
+
+    <div class="middle_anchor">
+
+      <div id="driver1" class="driver1_name"></div>
+      <div class="VS">
+        <h2>VS</h2>
+      </div>
+      <div id="driver2" class="driver2_name"></div>
+
+    </div>
+
+    <div class="driver2_dropdown">
+      <select id="driverSelect2">
+        <option value="">Select driver 2</option>
+      </select>
+    </div>
+
+  </div>
+
+  <br>
+
+  <div class="comparison_display">
+
+    <div id="butterflyChart"></div>
+
+  </div>
+
+  <div class="add_chart_section">
+
+    <div class="add_chart_header">
+
+      <div class="add_points_title">
+        <h3>Points Scored by Season</h3>
+      </div>
+
+      <div class="add_laps_title">
+        <h3>Most Fastest Laps by Season</h3>
+      </div>
+
+    </div>
+
+    <div class="add_chart_display">
+
+      <div id="points_chart" class="add_points_chart"></div>
+      <div id="laps_chart" class="add_laps_chart"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- End -->
+
+<br><br><br>
+
+<div id="footer">
+  <p>2023 | On The Inside | Presented to you by Arif & Shuhail</p>
+</div>
+
+<!-- extra -->
+<!-- extra -->
+<!-- extra -->
+
+<!-- Scripts -->
+
+<!-- Overview Section -->
+
+<!-- Slider & Box Info -->
+<script>
+
+  let drivers = {};
+  let races = {};
+
+  Papa.parse("assets/data/csv/drivers.csv", {
+    header: true,
+    download: true,
+    complete: function (driversData) {
+      drivers = driversData.data.reduce((acc, driver) => {
+        acc[driver.driverId] = driver.forename + " " + driver.surname;
+        return acc;
+      }, {});
+    },
+  });
+
+  // Load the race data
+  Papa.parse("assets/data/csv/races.csv", {
+    header: true,
+    download: true,
+    complete: function (racesData) {
+      races = racesData.data.reduce((acc, race) => {
+        acc[race.raceId] = race.year;
+        return acc;
+      }, {});
+    },
+  });
+
+  function findDriverWithHighestPointsByYear() {
+    const yearSlider = document.getElementById("year");
+    const selectedYear = parseInt(yearSlider.value);
+
+    // Load the result data
+    Papa.parse("assets/data/csv/results.csv", {
+      header: true,
+      download: true,
+      complete: function (resultsData) {
+        // Getting the sum of points by year for each driver
+        function getSumPointsByYear(driverId) {
+          const sumPointsByYear = {};
+
+          const driverResults = resultsData.data.filter(
+                  (result) => result.driverId === driverId
+          );
+
+          const resultsByYear = driverResults.reduce((acc, result) => {
+            const raceYear = races[result.raceId];
+            if (!acc[raceYear]) {
+              acc[raceYear] = [];
+            }
+            acc[raceYear].push(result);
+            return acc;
+          }, {});
+
+          Object.entries(resultsByYear).forEach(([year, results]) => {
+            const sumPoints = results.reduce(
+                    (sum, result) => sum + parseInt(result.points),
+                    0
+            );
+            sumPointsByYear[year] = sumPoints;
+          });
+
+          return sumPointsByYear;
+        }
+
+        let highestPoints = -1;
+        let highestPointsDriver = '';
+
+        Object.keys(drivers).forEach((driverId) => {
+          const sumPointsByYear = getSumPointsByYear(driverId);
+
+          if (sumPointsByYear[selectedYear]) {
+            const points = sumPointsByYear[selectedYear];
+
+            if (points > highestPoints) {
+              highestPoints = points;
+              highestPointsDriver = drivers[driverId];
+            }
+          }
+        });
+
+        const highestPointsDriverElement = document.getElementById("highestPointsDriver");
+        highestPointsDriverElement.textContent = highestPointsDriver;
+        // highestPointsDisplay.textContent = `Driver Champion in ${selectedYear}: ${highestPointsDriver}`;
+      },
+    });
+  }
+
+  function findDriverWithMostFastestLapsByYear() {
+    const yearSlider = document.getElementById("year");
+    const selectedYear = parseInt(yearSlider.value);
+
+    // Load the result data
+    Papa.parse("assets/data/csv/results.csv", {
+      header: true,
+      download: true,
+      complete: function (resultsData) {
+
+        function getCountFastestLapsByYear(driverId) {
+          const countFastestLapsByYear = {};
+
+          const driverResults = resultsData.data.filter(
+                  (result) => result.driverId === driverId && result.rank === "1"
+          );
+
+          const resultsByYear = driverResults.reduce((acc, result) => {
+            const raceYear = races[result.raceId];
+            if (!acc[raceYear]) {
+              acc[raceYear] = [];
+            }
+            acc[raceYear].push(result);
+            return acc;
+          }, {});
+
+          Object.entries(resultsByYear).forEach(([year, results]) => {
+            const countFastestLaps = results.length;
+            countFastestLapsByYear[year] = countFastestLaps;
+          });
+
+          return countFastestLapsByYear;
+        }
+
+        let mostFastestLaps = -1;
+        let mostFastestLapsDriver = '';
+
+        Object.keys(drivers).forEach((driverId) => {
+          const countFastestLapsByYear = getCountFastestLapsByYear(driverId);
+
+          if (countFastestLapsByYear[selectedYear]) {
+            const fastestLaps = countFastestLapsByYear[selectedYear];
+
+            if (fastestLaps > mostFastestLaps) {
+              mostFastestLaps = fastestLaps;
+              mostFastestLapsDriver = drivers[driverId];
+            }
+          }
+        });
+
+        const mostFastestLapsElement = document.getElementById("mostFastestLapsDriver");
+        mostFastestLapsElement.textContent = mostFastestLapsDriver;
+        //mostFastestLapsDisplay.textContent = `Most Fastest Laps in ${selectedYear}: ${mostFastestLapsDriver}`;
+      },
+    });
+  }
+
+  function findDriverWithMostPodiumFinishesByYear() {
+    const yearSlider = document.getElementById("year");
+    const selectedYear = parseInt(yearSlider.value);
+
+    // Load the result data
+    Papa.parse("assets/data/csv/results.csv", {
+      header: true,
+      download: true,
+      complete: function (resultsData) {
+        function getCountPodiumFinishesByYear(driverId) {
+          const countPodiumFinishesByYear = {};
+
+          const driverResults = resultsData.data.filter(
+                  (result) => result.driverId === driverId && parseInt(result.position) <= 3
+          );
+
+          const resultsByYear = driverResults.reduce((acc, result) => {
+            const raceYear = races[result.raceId];
+            if (!acc[raceYear]) {
+              acc[raceYear] = [];
+            }
+            acc[raceYear].push(result);
+            return acc;
+          }, {});
+
+          // Count podium finishes by year
+          Object.entries(resultsByYear).forEach(([year, results]) => {
+            const countPodiumFinishes = results.length;
+            countPodiumFinishesByYear[year] = countPodiumFinishes;
+          });
+
+          return countPodiumFinishesByYear;
+        }
+
+        let mostPodiumFinishes = -1;
+        let mostPodiumFinishesDriver = '';
+
+        // Iterate over all drivers
+        Object.keys(drivers).forEach((driverId) => {
+          const countPodiumFinishesByYear = getCountPodiumFinishesByYear(driverId);
+
+          // Check if the selected year exists in the results
+          if (countPodiumFinishesByYear[selectedYear]) {
+            const podiumFinishes = countPodiumFinishesByYear[selectedYear];
+
+            // Check if the current driver has the most podium finishes for the selected year
+            if (podiumFinishes > mostPodiumFinishes) {
+              mostPodiumFinishes = podiumFinishes;
+              mostPodiumFinishesDriver = drivers[driverId];
+            }
+          }
+        });
+
+
+        const mostPodiumFinishesElement = document.getElementById("mostPodiumFinishesDriver");
+        mostPodiumFinishesElement.textContent = mostPodiumFinishesDriver;
+        //mostPodiumFinishesDisplay.textContent = `Most Podiums in ${selectedYear}: ${mostPodiumFinishesDriver}`;
+      },
+    });
+  }
+  function findConstructorWithHighestPointsByYear() {
+    const yearSlider = document.getElementById("year");
+    const selectedYear = parseInt(yearSlider.value);
+
+    Papa.parse("assets/data/csv/constructors.csv", {
+      header: true,
+      download: true,
+      complete: function (constructorsData) {
+        const constructors = constructorsData.data.reduce((acc, constructor) => {
+          acc[constructor.constructorId] = constructor.name;
+          return acc;
+        }, {});
+
+        Papa.parse("assets/data/csv/results.csv", {
+          header: true,
+          download: true,
+          complete: function (resultsData) {
+            function getSumPointsByYear(constructorId) {
+              const sumPointsByYear = {};
+
+              const constructorResults = resultsData.data.filter(
+                      (result) => result.constructorId === constructorId
+              );
+
+              const resultsByYear = constructorResults.reduce((acc, result) => {
+                const raceYear = races[result.raceId];
+                if (!acc[raceYear]) {
+                  acc[raceYear] = [];
+                }
+                acc[raceYear].push(result);
+                return acc;
+              }, {});
+
+              // Calculate sum of points by year
+              Object.entries(resultsByYear).forEach(([year, results]) => {
+                const sumPoints = results.reduce(
+                        (sum, result) => sum + parseInt(result.points),
+                        0
+                );
+                sumPointsByYear[year] = sumPoints;
+              });
+
+              return sumPointsByYear;
+            }
+
+            let highestPoints = -1;
+            let highestPointsConstructor = '';
+
+            Object.keys(constructors).forEach((constructorId) => {
+              const sumPointsByYear = getSumPointsByYear(constructorId);
+
+              // Check if the selected year exists in the results
+              if (sumPointsByYear[selectedYear]) {
+                const points = sumPointsByYear[selectedYear];
+
+                // Check if the current constructor has the highest points for the selected year
+                if (points > highestPoints) {
+                  highestPoints = points;
+                  highestPointsConstructor = constructors[constructorId];
+                }
+              }
+            });
+
+            const constructorChampionElement = document.getElementById("highestPointsConstructor");
+            constructorChampionElement.textContent = highestPointsConstructor;
+            //constructorDisplay.textContent = `Constructor Champion in ${selectedYear}: ${highestPointsConstructor}`;
+          },
+        });
+      },
+    });
+  }
+
+  const yearSlider = document.getElementById("year");
+  const prevYearButton = document.getElementById("prevYear");
+  const nextYearButton = document.getElementById("nextYear");
+  const selectedYearDisplay = document.getElementById("selectedYearDisplay");
+
+  // Update the selected year display
+  function updateSelectedYearDisplay() {
+    const selectedYear = parseInt(yearSlider.value);
+    selectedYearDisplay.textContent = `Year: ${selectedYear}`;
+  }
+
+  yearSlider.addEventListener("input", function () {
+    findDriverWithHighestPointsByYear();
+    findDriverWithMostFastestLapsByYear();
+    findDriverWithMostPodiumFinishesByYear();
+    findConstructorWithHighestPointsByYear();
+    updateChart();
+    updateSelectedYearDisplay();
+  });
+
+  prevYearButton.addEventListener("click", function () {
+    yearSlider.stepDown();
+    findDriverWithHighestPointsByYear();
+    findDriverWithMostFastestLapsByYear();
+    findDriverWithMostPodiumFinishesByYear();
+    findConstructorWithHighestPointsByYear();
+    updateChart();
+    updateSelectedYearDisplay();
+  });
+
+  nextYearButton.addEventListener("click", function () {
+    yearSlider.stepUp();
+    findDriverWithHighestPointsByYear();
+    findDriverWithMostFastestLapsByYear();
+    findDriverWithMostPodiumFinishesByYear();
+    findConstructorWithHighestPointsByYear();
+    updateChart();
+    updateSelectedYearDisplay();
+  });
+
+  findDriverWithHighestPointsByYear();
+  findDriverWithMostFastestLapsByYear();
+  findDriverWithMostPodiumFinishesByYear();
+  findConstructorWithHighestPointsByYear();
+  updateChart();
+  updateSelectedYearDisplay();
+</script>
+
+<!-- Driver Standings Chart -->
+<script>
+  let racesData, driversData, circuitsData, resultsData;
+  let svg;
+
+  const updateChart = () => {
+
+    d3.select("#chart").selectAll("svg").remove();
+
+    // Filter the data for a specific year
+    const selectedYear = yearSlider.value;
+    const filteredRacesData = racesData.filter(race => race.year === selectedYear);
+
+    const circuitNames = filteredRacesData.map(race => {
+      const circuitId = race.circuitId;
+      const circuit = circuitsData.find(circuit => circuit.circuitId === circuitId);
+      return circuit.name;
+    });
+
+    const driverPointsByCircuit = {};
+    resultsData.forEach(result => {
+      const raceId = result.raceId;
+      const driverId = result.driverId;
+      const points = +result.points;
+
+      if (filteredRacesData.some(race => race.raceId === raceId)) {
+        if (!driverPointsByCircuit[driverId]) {
+          driverPointsByCircuit[driverId] = Array(circuitNames.length).fill(0);
+        }
+
+        const circuitIndex = filteredRacesData.findIndex(race => race.raceId === raceId);
+        driverPointsByCircuit[driverId][circuitIndex] += points;
+      }
+    });
+
+    Object.values(driverPointsByCircuit).forEach(points => {
+      for (let i = 1; i < points.length; i++) {
+        points[i] += points[i - 1];
+      }
+    });
+
+    const driverData = Object.entries(driverPointsByCircuit).map(([driverId, points]) => {
+      const driver = driversData.find(driver => driver.driverId === driverId);
+      const driverName = `${driver.forename} ${driver.surname}`;
+      return { driver: driverName, points };
+    });
+
+    const margin = { top: 50, right: 20, bottom: 30, left: 50 };
+    const width = 1200 - margin.left - margin.right;
+    const height = 550 - margin.top - margin.bottom;
+
+    svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    const xScale = d3.scalePoint()
+            .domain(circuitNames)
+            .range([0, width])
+            .padding(0.5);
+
+    const yScale = d3.scaleLinear()
+            .domain([0, d3.max(driverData, d => d3.max(d.points))])
+            .range([height, 0]);
+
+    const line = d3.line()
+            .x((d, i) => xScale(circuitNames[i]))
+            .y(d => yScale(d));
+
+    svg.selectAll(".line")
+            .data(driverData)
+            .enter()
+            .append("path")
+            .attr("class", "line")
+            .attr("d", d => line(d.points))
+            .style("fill", "none")
+            .style("stroke", (d, i) => d3.schemeCategory10[i % 10])
+            .each(function () {
+              const path = d3.select(this);
+              const totalLength = path.node().getTotalLength();
+
+              path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                      .attr("stroke-dashoffset", totalLength)
+                      .transition()
+                      .duration(2000)
+                      .attr("stroke-dashoffset", 0);
+            })
+            .on("mouseover", (event, d) => {
+              // Increase line width on hover
+              d3.select(event.target)
+                      .style("stroke-width", "4px");
+
+              // Display name and score on hover
+              svg.append("text")
+                      .attr("class", "driver-name")
+                      .attr("x", xScale(circuitNames[circuitNames.length - 5]) )
+                      .attr("y", yScale(d.points[d.points.length - 1]) - 10)
+                      .text(d.driver);
+
+              svg.append("text")
+                      .attr("class", "points-scored")
+                      .attr("x", xScale(circuitNames[circuitNames.length - 5]))
+                      .attr("y", yScale(d.points[d.points.length - 1]) + 10)
+                      .text(d.points[d.points.length - 1]);
+            })
+            .on("mouseout", (event, d) => {
+              d3.select(event.target)
+                      .style("stroke-width", "2px");
+              svg.select(".driver-name").remove(); //When hover outside of the line, remove both
+              svg.select(".points-scored").remove();
+            });
+
+    // X-axis
+    svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(d3.scaleBand().domain([...Array(circuitNames.length).keys()].map(d => d + 1)).range([1, width])));
+
+    // Y-axis
+    svg.append("g")
+            .call(d3.axisLeft(yScale));
+
+    // X-axis label
+    svg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", width / 2)
+            .attr("y", height + margin.top - 20)
+            .attr("text-anchor", "middle")
+            .text("Circuit");
+
+    // Y-axis label
+    svg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 13)
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .text("Points");
+
+    // Chart Title
+    svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+    // .text(`Driver Standings for ${selectedYear}`);
+
+  };
+  Promise.all([
+    d3.csv('assets/data/csv/drivers.csv'),
+    d3.csv('assets/data/csv/races.csv'),
+    d3.csv('assets/data/csv/circuits.csv'),
+    d3.csv('assets/data/csv/results.csv')
+  ]).then(([drivers, races, circuits, results]) => {
+    driversData = drivers;
+    racesData = races;
+    circuitsData = circuits;
+    resultsData = results;
+
+    yearSlider.addEventListener("input", updateChart);
+
+    updateChart();
+    updateSelectedYearDisplay();
+  }).catch(error => {
+    console.log(error);
+  });
+</script>
+
+<!-- End -->
+
+<!-- Map Section -->
+
+<script>
+
+  let csvData = {}; // Object to hold the CSV data
+
+  const driverSelect = document.getElementById("driverSelect");
+  const mapViewSelect = document.getElementById("mapViewSelect");
+
+  // FOR DRIVER COMPARISON //
+  const driverSelect1 = document.getElementById("driverSelect1");
+  const driverSelect2 = document.getElementById("driverSelect2");
+
+  let mapView = 1;
+  let selectedDriver = 0;
+
+  // Read and parse multiple CSV files
+  const files = ["assets/data/csv/drivers.csv", "assets/data/csv/circuits.csv", "assets/data/csv/constructor_results.csv",
+    "assets/data/csv/constructor_standings.csv", "assets/data/csv/constructors.csv", "assets/data/csv/driver_standings.csv",
+    "assets/data/csv/lap_times.csv", "assets/data/csv/pit_stops.csv", "assets/data/csv/qualifying.csv",
+    "assets/data/csv/races.csv", "assets/data/csv/results.csv", "assets/data/csv/sprint_results.csv"];
+
+  files.forEach(function(file) {
+    const filename = file.split('/').pop();
+    fetch(file)
+            .then(response => response.text())
+            .then(csvContent => {
+              Papa.parse(csvContent, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                  // Handle the parsed data for each file
+                  csvData[filename] = results.data;
+                  if (filename === "drivers.csv") {
+                    populateDriverDropdown();
+                    populateMapDriverDropdown();
+                  }
+                },
+                error: function(error) {
+                  console.error("Error parsing file:", file);
+                  console.error(error);
+                }
+              });
+            })
+            .catch(error => {
+              console.error("Error loading CSV file:", file);
+              console.error(error);
+            });
+  });
+
+  // Function to populate the driver dropdowns
+  function populateMapDriverDropdown() {
+    const driverData = csvData["drivers.csv"];
+
+    driverData.sort(function(a, b) {
+      // Sort the driverData array based on the first letter of the driver's name
+      const nameA = a.forename.charAt(0).toUpperCase();
+      const nameB = b.forename.charAt(0).toUpperCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
+
+    driverData.forEach(function(driver) {
+      const option = document.createElement("option");
+      option.value = driver.driverId;
+      option.text = driver.forename + " " + driver.surname;
+
+      driverSelect.appendChild(option);
+    });
+  }
+
+  // FOR DRIVER COMPARISON //
+  function populateDriverDropdown() {
+    const driverData = csvData["drivers.csv"];
+
+    driverData.sort(function(a, b) {
+      // Sort the driverData array based on the driver's name
+      const nameA = a.forename.toUpperCase();
+      const nameB = b.forename.toUpperCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
+
+    driverData.forEach(function(driver) {
+      const option1 = document.createElement("option");
+      const option2 = document.createElement("option");
+      option1.value = driver.driverId;
+      option1.text = driver.forename + " " + driver.surname;
+      option2.value = driver.driverId;
+      option2.text = driver.forename + " " + driver.surname;
+      driverSelect1.appendChild(option1);
+      driverSelect2.appendChild(option2);
+    });
+  }
+
+  const init_width = 1250;
+  const init_height = 750;
+
+  const init_svg = d3.select("#map")
+          .append("svg")
+          .attr("width", init_width)
+          .attr("height", init_height);
+
+  // Define the projection for the map (you can choose a different one if desired)
+  const init_projection = d3.geoMercator()
+          .scale(180)
+          .translate([init_width / 2, init_height / 1.4]);
+
+  // Create a path generator
+  const init_path = d3.geoPath().projection(init_projection);
+  const init_tooltip = d3.select("#tooltip");
+
+  // Load the map data
+  d3.json("assets/data/countries.geojson").then(function(mapData) {
+    // Draw the map
+    init_svg.selectAll("path")
+            .data(mapData.features)
+            .enter()
+            .append("path")
+            .attr("d", init_path)
+            .attr("fill", "#ccc")
+            // Add hover actions and tooltip display
+            .on("mouseover", function(event, d) {
+              // Increase the opacity of the hovered country
+              d3.select(this).style("opacity", 0.7);
+
+              // Position and display the tooltip
+              init_tooltip.style("left", event.pageX + "px")
+                      .style("top", event.pageY + "px")
+                      .style("opacity", 1)
+                      .html(`<strong>${d.properties.ADMIN}</strong>`);
+            })
+            .on("mouseout", function() {
+              // Reset the opacity and hide the tooltip
+              d3.select(this).style("opacity", 1);
+              init_tooltip.style("opacity", 0);
+            });
+  });
+
+  // Create a zoom behavior
+  const init_zoom = d3.zoom()
+          .scaleExtent([1, 8]) // Set the zoom scale range
+          .on("zoom", zoomed);
+
+  // Apply the zoom behavior to the SVG container
+  init_svg.call(init_zoom);
+
+  // Define the zoom handler function
+  function zoomed(event) {
+    // Get the current zoom transformation
+    const { transform } = event;
+
+    // Apply the transformation to the map features
+    init_svg.selectAll("path")
+            .attr("transform", transform);
+  }
+
+  // Add a listener for the mouse scroll event
+  init_svg.on("wheel", function(event) {
+    // Prevent the default scroll behavior
+    event.preventDefault();
+
+    // Get the current zoom scale
+    const currentScale = d3.zoomTransform(this).k;
+
+    // Calculate the new scale based on the scroll event
+    const newScale = currentScale - event.deltaY * 0.01;
+
+    // Apply the new scale with a smooth transition
+    init_svg.transition().duration(200).call(init_zoom.scaleTo, newScale);
+  });
+
+  function updateMap(map, driverId, chartContainerId) {
+
+    const driverData = csvData["drivers.csv"];
+    const driverResultsData = csvData["results.csv"];
+    const raceData = csvData["races.csv"];
+    const circuitData = csvData["circuits.csv"];
+    const qualifyingData = csvData["qualifying.csv"];
+
+    if (driverId !== 0) {
+      const driver = driverData.find(function (driver) {
+        return driver.driverId === driverId;
+      });
+
+      const driverName = driver.forename + " " + driver.surname;
+    }
+
+    // Wins
+    const driverWinData = driverResultsData.filter(function (result) {
+      return result.driverId === driverId && result.position === 1;
+    })
+    const winRaceIds = driverWinData.map(function (result) {
+      return result.raceId;
+    });
+    const winRaces = raceData.filter(function (result) {
+      return winRaceIds.includes(result.raceId);
+    });
+    const winCircuitIds = winRaces.map(function (result) {
+      return result.circuitId;
+    });
+    const winCircuits = circuitData.filter(function (result) {
+      return winCircuitIds.includes(result.circuitId);
+    });
+
+    const countryWins = {};
+    winRaces.forEach(function (race) {
+      const circuit = winCircuits.find(function (circuit) {
+        return circuit.circuitId === race.circuitId;
+      });
+
+      if (circuit) {
+        const country = circuit.country;
+        if (countryWins[country]) {
+          countryWins[country]++;
+        } else {
+          countryWins[country] = 1;
+        }
+      }
+    });
+
+    // Podiums
+    const driverPodiumData = driverResultsData.filter(function (result) {
+      return result.driverId === driverId && result.position <= 3;
+    });
+    const podiumRaceIds = driverPodiumData.map(function (result) {
+      return result.raceId;
+    });
+    const podiumRaces = raceData.filter(function (result) {
+      return podiumRaceIds.includes(result.raceId);
+    });
+    const podiumCircuitIds = podiumRaces.map(function (result) {
+      return result.circuitId;
+    });
+    const podiumCircuits = circuitData.filter(function (result) {
+      return podiumCircuitIds.includes(result.circuitId);
+    });
+
+    const countryPodiums = {};
+    podiumRaces.forEach(function (race) {
+      const circuit = podiumCircuits.find(function (circuit) {
+        return circuit.circuitId === race.circuitId;
+      });
+
+      if (circuit) {
+        const country = circuit.country;
+        if (countryPodiums[country]) {
+          countryPodiums[country]++;
+        } else {
+          countryPodiums[country] = 1;
+        }
+      }
+    });
+
+    // Poles
+    const driverPoleData = qualifyingData.filter(function (result) {
+      return result.driverId === driverId && result.position === 1;
+    });
+    const poleRaceIds = driverPoleData.map(function (result) {
+      return result.raceId;
+    });
+    const poleRaces = raceData.filter(function (result) {
+      return poleRaceIds.includes(result.raceId);
+    });
+    const poleCircuitIds = poleRaces.map(function (result) {
+      return result.circuitId;
+    });
+    const poleCircuits = circuitData.filter(function (result) {
+      return poleCircuitIds.includes(result.circuitId);
+    });
+
+    const countryPoles = {};
+    poleRaces.forEach(function (race) {
+      const circuit = poleCircuits.find(function (circuit) {
+        return circuit.circuitId === race.circuitId;
+      });
+
+      if (circuit) {
+        const country = circuit.country;
+        if (countryPoles[country]) {
+          countryPoles[country]++;
+        } else {
+          countryPoles[country] = 1;
+        }
+      }
+    });
+
+    // Max values for scaling
+    const maxWins = Math.max(...Object.values(countryWins));
+    const maxPodiums = Math.max(...Object.values(countryPodiums));
+    const maxPoles = Math.max(...Object.values(countryPoles));
+
+    if (map === 1) {
+
+      const chartContainer = document.getElementById(chartContainerId);
+      chartContainer.innerHTML = "";
+
+      const width = 1250;
+      const height = 750;
+
+      const svg = d3.select("#" + chartContainerId)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+      // Define the projection for the map (you can choose a different one if desired)
+      const projection = d3.geoMercator()
+              .scale(180)
+              .translate([width / 2, height / 1.4]);
+
+      // Create a path generator
+      const path = d3.geoPath().projection(projection);
+      const tooltip = d3.select("#tooltip");
+
+      // Load the map data
+      d3.json("assets/data/countries.geojson").then(function(mapData) {
+        // Draw the map
+        svg.selectAll("path")
+                .data(mapData.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("fill", function(d) {
+                  // Lookup the number of wins for the current country
+                  const wins = countryWins[d.properties.ADMIN];
+                  if (wins) {
+                    // Replace the color based on the number of wins
+                    return d3.interpolateReds(wins / maxWins);
+                  } else {
+                    return "#ccc"; // Default color for countries without data
+                  }
+                })
+                // Add hover actions and tooltip display
+                .on("mouseover", function(event, d) {
+                  // Increase the opacity of the hovered country
+                  d3.select(this).style("opacity", 0.7);
+
+                  const wins = countryWins[d.properties.ADMIN];
+                  const winsText = wins !== null && wins !== undefined ? wins : 0;
+
+                  // Position and display the tooltip
+                  tooltip.style("left", event.pageX + "px")
+                          .style("top", event.pageY + "px")
+                          .style("opacity", 1)
+                          .html(`<strong>${d.properties.ADMIN}</strong><br>Wins: ${winsText}`);
+                })
+                .on("mouseout", function() {
+                  // Reset the opacity and hide the tooltip
+                  d3.select(this).style("opacity", 1);
+                  tooltip.style("opacity", 0);
+                });
+      });
+
+      // Create a zoom behavior
+      const zoom = d3.zoom()
+              .scaleExtent([1, 8]) // Set the zoom scale range
+              .on("zoom", zoomed);
+
+      // Apply the zoom behavior to the SVG container
+      svg.call(zoom);
+
+      // Define the zoom handler function
+      function zoomed(event) {
+        // Get the current zoom transformation
+        const { transform } = event;
+
+        // Apply the transformation to the map features
+        svg.selectAll("path")
+                .attr("transform", transform);
+      }
+
+      // Add a listener for the mouse scroll event
+      svg.on("wheel", function(event) {
+        // Prevent the default scroll behavior
+        event.preventDefault();
+
+        // Get the current zoom scale
+        const currentScale = d3.zoomTransform(this).k;
+
+        // Calculate the new scale based on the scroll event
+        const newScale = currentScale - event.deltaY * 0.01;
+
+        // Apply the new scale with a smooth transition
+        svg.transition().duration(200).call(zoom.scaleTo, newScale);
+      });
+
+    } else if (map === 2) {
+
+      const chartContainer = document.getElementById(chartContainerId);
+      chartContainer.innerHTML = "";
+
+      const width = 1250;
+      const height = 750;
+
+      const svg = d3.select("#" + chartContainerId)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+      // Define the projection for the map (you can choose a different one if desired)
+      const projection = d3.geoMercator()
+              .scale(180)
+              .translate([width / 2, height / 1.4]);
+
+      // Create a path generator
+      const path = d3.geoPath().projection(projection);
+      const tooltip = d3.select("#tooltip");
+
+      // Load the map data
+      d3.json("assets/data/countries.geojson").then(function(mapData) {
+        // Draw the map
+        svg.selectAll("path")
+                .data(mapData.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("fill", function(d) {
+                  // Lookup the number of podiums for the current country
+                  const podiums = countryPodiums[d.properties.ADMIN];
+                  if (podiums) {
+                    // Replace the color based on the number of podiums
+                    return d3.interpolateGreens(podiums / maxPodiums);
+                  } else {
+                    return "#ccc"; // Default color for countries without data
+                  }
+                })
+                // Add hover actions and tooltip display
+                .on("mouseover", function(event, d) {
+                  // Increase the opacity of the hovered country
+                  d3.select(this).style("opacity", 0.7);
+
+                  const podiums = countryPodiums[d.properties.ADMIN];
+                  const podiumsText = podiums !== null && podiums !== undefined ? podiums : 0;
+
+                  // Position and display the tooltip
+                  tooltip.style("left", event.pageX + "px")
+                          .style("top", event.pageY + "px")
+                          .style("opacity", 1)
+                          .html(`<strong>${d.properties.ADMIN}</strong><br>Podiums: ${podiumsText}`);
+                })
+                .on("mouseout", function() {
+                  // Reset the opacity and hide the tooltip
+                  d3.select(this).style("opacity", 1);
+                  tooltip.style("opacity", 0);
+                });
+      });
+
+      // Create a zoom behavior
+      const zoom = d3.zoom()
+              .scaleExtent([1, 8]) // Set the zoom scale range
+              .on("zoom", zoomed);
+
+      // Apply the zoom behavior to the SVG container
+      svg.call(zoom);
+
+      // Define the zoom handler function
+      function zoomed(event) {
+        // Get the current zoom transformation
+        const { transform } = event;
+
+        // Apply the transformation to the map features
+        svg.selectAll("path")
+                .attr("transform", transform);
+      }
+
+      // Add a listener for the mouse scroll event
+      svg.on("wheel", function(event) {
+        // Prevent the default scroll behavior
+        event.preventDefault();
+
+        // Get the current zoom scale
+        const currentScale = d3.zoomTransform(this).k;
+
+        // Calculate the new scale based on the scroll event
+        const newScale = currentScale - event.deltaY * 0.01;
+
+        // Apply the new scale with a smooth transition
+        svg.transition().duration(200).call(zoom.scaleTo, newScale);
+      });
+
+    } else if (map === 3) {
+
+      const chartContainer = document.getElementById(chartContainerId);
+      chartContainer.innerHTML = "";
+
+      const width = 1250;
+      const height = 750;
+
+      const svg = d3.select("#" + chartContainerId)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+      // Define the projection for the map (you can choose a different one if desired)
+      const projection = d3.geoMercator()
+              .scale(180)
+              .translate([width / 2, height / 1.4]);
+
+      // Create a path generator
+      const path = d3.geoPath().projection(projection);
+      const tooltip = d3.select("#tooltip");
+
+      // Load the map data
+      d3.json("assets/data/countries.geojson").then(function(mapData) {
+        // Draw the map
+        svg.selectAll("path")
+                .data(mapData.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("fill", function(d) {
+                  // Lookup the number of poles for the current country
+                  const poles = countryPoles[d.properties.ADMIN];
+                  if (poles) {
+                    // Replace the color based on the number of wins
+                    return d3.interpolateBlues(poles / maxPoles);
+                  } else {
+                    return "#ccc"; // Default color for countries without data
+                  }
+                })
+                // Add hover actions and tooltip display
+                .on("mouseover", function(event, d) {
+                  // Increase the opacity of the hovered country
+                  d3.select(this).style("opacity", 0.7);
+
+                  const poles = countryPoles[d.properties.ADMIN];
+                  const polesText = poles !== null && poles !== undefined ? poles : 0;
+
+                  // Position and display the tooltip
+                  tooltip.style("left", event.pageX + "px")
+                          .style("top", event.pageY + "px")
+                          .style("opacity", 1)
+                          .html(`<strong>${d.properties.ADMIN}</strong><br>Poles: ${polesText}`);
+                })
+                .on("mouseout", function() {
+                  // Reset the opacity and hide the tooltip
+                  d3.select(this).style("opacity", 1);
+                  tooltip.style("opacity", 0);
+                });
+      });
+
+      // Create a zoom behavior
+      const zoom = d3.zoom()
+              .scaleExtent([1, 8]) // Set the zoom scale range
+              .on("zoom", zoomed);
+
+      // Apply the zoom behavior to the SVG container
+      svg.call(zoom);
+
+      // Define the zoom handler function
+      function zoomed(event) {
+        // Get the current zoom transformation
+        const { transform } = event;
+
+        // Apply the transformation to the map features
+        svg.selectAll("path")
+                .attr("transform", transform);
+      }
+
+      // Add a listener for the mouse scroll event
+      svg.on("wheel", function(event) {
+        // Prevent the default scroll behavior
+        event.preventDefault();
+
+        // Get the current zoom scale
+        const currentScale = d3.zoomTransform(this).k;
+
+        // Calculate the new scale based on the scroll event
+        const newScale = currentScale - event.deltaY * 0.01;
+
+        // Apply the new scale with a smooth transition
+        svg.transition().duration(200).call(zoom.scaleTo, newScale);
+      });
+
+    }
+
+  }
+
+  mapViewSelect.addEventListener("change", function() {
+    const map = mapViewSelect.value;
+
+    if (map) {
+      if (selectedDriver === 0) {
+        mapView = parseInt(map);
+        updateMap(0, selectedDriver, "map");
+      } else {
+        mapView = parseInt(map);
+        updateMap(mapView, selectedDriver, "map");
+      }
+    }
+  });
+
+  driverSelect.addEventListener("change", function () {
+    const driver = driverSelect.value;
+
+    if (driver) {
+      selectedDriver = parseInt(driver);
+      updateMap(mapView, selectedDriver, "map");
+    }
+  });
+
+</script>
+
+<!-- End -->
+
+<!-- Driver Comparison Section -->
+
+<script>
+
+  const driver1Display = document.getElementById("driver1");
+  const driver2Display = document.getElementById("driver2");
+
+  // Update the selected drivers display
+  function updateDriver1Display(selectedDriver) {
+    driver1Display.textContent = `${selectedDriver}`;
+  }
+
+  function updateDriver2Display(selectedDriver) {
+    driver2Display.textContent = `${selectedDriver}`;
+  }
+
+  function initButterflyChart(driver1Name, driver2Name, driverId1, driverId2) {
+
+    updateDriver1Display(driver1Name);
+    updateDriver2Display(driver2Name);
+
+    const driverResultsData = csvData["results.csv"];
+    const qualifyingData = csvData["qualifying.csv"];
+
+    const driver1Results = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1;
+    });
+
+    const driver2Results = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2;
+    });
+
+    const driver1RaceCount = driver1Results.length;
+    const driver2RaceCount = driver2Results.length;
+
+    const driver1Wins = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1 && result.position === 1;
+    }).length;
+
+    const driver2Wins = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2 && result.position === 1;
+    }).length;
+
+    const driver1Podiums = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1 && result.position <= 3;
+    }).length;
+
+    const driver2Podiums = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2 && result.position <= 3;
+    }).length;
+
+    const driver1Poles = qualifyingData.filter(function (result) {
+      return result.driverId === driverId1 && result.position === 1;
+    }).length;
+
+    const driver2Poles = qualifyingData.filter(function (result) {
+      return result.driverId === driverId2 && result.position === 1;
+    }).length;
+
+    const maxRaceCount = Math.max(driver1RaceCount, driver2RaceCount);
+    const barWidthScale = d3.scaleLinear()
+            .domain([0, maxRaceCount])
+            .range([0, 600]);
+
+    const svg = d3.select("#butterflyChart")
+            .append("svg")
+            .attr("width", 1460)
+            .attr("height", 300);
+
+    // Driver 1 bar
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1RaceCount))
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1RaceCount));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Wins))
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Wins));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Podiums))
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Podiums));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Poles))
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Poles));
+
+    // Driver 2 bar
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2RaceCount));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Wins));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Podiums));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Poles));
+
+    // Driver 1 text
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1RaceCount) - 25)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver1RaceCount)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Wins) - 25)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver1Wins)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Podiums) - 25)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver1Podiums)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Poles) - 25)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver1Poles)
+            .style("fill", "#000");
+
+    // Driver 2 text
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2RaceCount) + 25)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver2RaceCount)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Wins) + 25)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver2Wins)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Podiums) + 25)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver2Podiums)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Poles) + 25)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver2Poles)
+            .style("fill", "#000"); /*gg*/
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 60)
+            .attr("text-anchor", "middle")
+            .text("Races")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 110)
+            .attr("text-anchor", "middle")
+            .text("Wins")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 170)
+            .attr("text-anchor", "middle")
+            .text("Podiums")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 230)
+            .attr("text-anchor", "middle")
+            .text("Poles")
+            .style("fill", "#000");
+
+  }
+
+  setTimeout(function() {
+    const driverData = csvData["drivers.csv"];
+
+    const driverId1 = 1;
+    const driverId2 = 830;
+
+    const driver1 = driverData.find(function (driver) {
+      return driver.driverId === driverId1;
+    });
+
+    const driver2 = driverData.find(function (driver) {
+      return driver.driverId === driverId2;
+    });
+
+    const driver1Name = driver1.forename + " " + driver1.surname;
+    const driver2Name = driver2.forename + " " + driver2.surname;
+
+    initButterflyChart(driver1Name, driver2Name, driverId1, driverId2);
+
+  }, 2000);
+
+  // Function to update the butterfly chart
+  function updateButterflyChart(driverId1, driverId2, chartContainerId) {
+
+    const driverResultsData = csvData["results.csv"];
+    const qualifyingData = csvData["qualifying.csv"];
+
+    const driver1Results = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1;
+    });
+
+    const driver2Results = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2;
+    });
+
+    const driver1RaceCount = driver1Results.length;
+    const driver2RaceCount = driver2Results.length;
+
+    const driver1Wins = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1 && result.position === 1;
+    }).length;
+
+    const driver2Wins = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2 && result.position === 1;
+    }).length;
+
+    const driver1Podiums = driverResultsData.filter(function (result) {
+      return result.driverId === driverId1 && result.position <= 3;
+    }).length;
+
+    const driver2Podiums = driverResultsData.filter(function (result) {
+      return result.driverId === driverId2 && result.position <= 3;
+    }).length;
+
+    const driver1Poles = qualifyingData.filter(function (result) {
+      return result.driverId === driverId1 && result.position === 1;
+    }).length;
+
+    const driver2Poles = qualifyingData.filter(function (result) {
+      return result.driverId === driverId2 && result.position === 1;
+    }).length;
+
+    const maxRaceCount = Math.max(driver1RaceCount, driver2RaceCount);
+    const barWidthScale = d3.scaleLinear()
+            .domain([0, maxRaceCount])
+            .range([0, 600]);
+
+    // Select the SVG container element
+    const svgContainer = d3.select("#butterflyChart");
+
+    // Remove the SVG container
+    svgContainer.selectAll("*").remove();
+
+    const svg = d3.select("#butterflyChart")
+            .append("svg")
+            .attr("width", 1460)
+            .attr("height", 300);
+
+    // Driver 1 bar
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1RaceCount))
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1RaceCount));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Wins))
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Wins));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Podiums))
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Podiums));
+
+    svg.append("rect")
+            .attr("x", 650 - barWidthScale(driver1Poles))
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#377eb8")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver1Poles));
+
+    // Driver 2 bar
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 25)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2RaceCount));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 80)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Wins));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 135)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Podiums));
+
+    svg.append("rect")
+            .attr("x", 800)
+            .attr("y", 190)
+            .attr("height", 50)
+            .attr("fill", "#e41a1c")
+            .transition()
+            .duration(1000)
+            .attr("width", barWidthScale(driver2Poles));
+
+    // Driver 1 text
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1RaceCount) - 25)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver1RaceCount)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Wins) - 25)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver1Wins)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Podiums) - 25)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver1Podiums)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 650 - barWidthScale(driver1Poles) - 25)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver1Poles)
+            .style("fill", "#000");
+
+    // Driver 2 text
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2RaceCount) + 25)
+            .attr("y", 70)
+            .attr("text-anchor", "middle")
+            .text(driver2RaceCount)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Wins) + 25)
+            .attr("y", 125)
+            .attr("text-anchor", "middle")
+            .text(driver2Wins)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Podiums) + 25)
+            .attr("y", 175)
+            .attr("text-anchor", "middle")
+            .text(driver2Podiums)
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 800 + barWidthScale(driver2Poles) + 25)
+            .attr("y", 235)
+            .attr("text-anchor", "middle")
+            .text(driver2Poles)
+            .style("fill", "#000"); /*gg*/
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 60)
+            .attr("text-anchor", "middle")
+            .text("Races")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 110)
+            .attr("text-anchor", "middle")
+            .text("Wins")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 170)
+            .attr("text-anchor", "middle")
+            .text("Podiums")
+            .style("fill", "#000");
+
+    svg.append("text")
+            .attr("x", 725)
+            .attr("y", 230)
+            .attr("text-anchor", "middle")
+            .text("Poles")
+            .style("fill", "#000");
+  }
+
+  driverSelect1.addEventListener("change", function () {
+    const driverData = csvData["drivers.csv"];
+
+    const selectedDriver1 = driverSelect1.value;
+    const selectedDriver2 = driverSelect2.value;
+
+    const driver1 = driverData.find(function (driver) {
+      return driver.driverId === parseInt(selectedDriver1);
+    });
+
+    const driver1Name = driver1.forename + " " + driver1.surname;
+
+    updateDriver1Display(driver1Name);
+
+    if (selectedDriver1 && selectedDriver2) {
+      const desiredDriverId1 = parseInt(selectedDriver1);
+      const desiredDriverId2 = parseInt(selectedDriver2);
+
+      updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
+    }
+  });
+
+  driverSelect2.addEventListener("change", function () {
+    const driverData = csvData["drivers.csv"];
+
+    const selectedDriver1 = driverSelect1.value;
+    const selectedDriver2 = driverSelect2.value;
+
+    const driver2 = driverData.find(function (driver) {
+      return driver.driverId === parseInt(selectedDriver2);
+    });
+
+    const driver2Name = driver2.forename + " " + driver2.surname;
+
+    updateDriver2Display(driver2Name);
+
+    if (selectedDriver1 && selectedDriver2) {
+      const desiredDriverId1 = parseInt(selectedDriver1);
+      const desiredDriverId2 = parseInt(selectedDriver2);
+
+      updateButterflyChart(desiredDriverId1, desiredDriverId2, "butterflyChart");
+    }
+  });
+
+</script>
+
+<!-- Points Scored by Season -->
+<script>
+
+  // Load the CSV data using PapaParse
+  Papa.parse("assets/data/csv/drivers.csv", {
+    header: true,
+    download: true,
+    complete: function (driversData) {
+      // Store the drivers data in an object for easy access
+      const drivers = driversData.data.reduce((acc, driver) => {
+        acc[driver.driverId] = driver.forename + " " + driver.surname;
+        return acc;
+      }, {});
+
+
+      // Load the race data
+      Papa.parse("assets/data/csv/races.csv", {
+        header: true,
+        download: true,
+        complete: function (racesData) {
+          // Store the races data in an object for easy access
+          const races = racesData.data.reduce((acc, race) => {
+            acc[race.raceId] = race.year;
+            return acc;
+          }, {});
+
+          // Load the result data
+          Papa.parse("assets/data/csv/results.csv", {
+            header: true,
+            download: true,
+            complete: function (resultsData) {
+              // Function to get points scored by year for a driver
+              function getPointsByYear(driverId) {
+                const driverPointsByYear = {};
+
+                // Filter results based on driver ID
+                const driverResults = resultsData.data.filter(
+                        (result) => result.driverId === driverId
+                );
+
+                // Calculate points scored by year
+                driverResults.forEach((result) => {
+                  const raceYear = races[result.raceId];
+                  const points = parseInt(result.points);
+
+                  if (driverPointsByYear[raceYear]) {
+                    driverPointsByYear[raceYear] += points;
+                  } else {
+                    driverPointsByYear[raceYear] = points;
+                  }
+                });
+
+                return driverPointsByYear;
+              }
+
+              // Set up dimensions
+              const width = 800;
+              const height = 300;
+              const margin = { top: 10, right: 20, bottom: 40, left: 50 };
+              const innerWidth = width - margin.left - margin.right;
+              const innerHeight = height - margin.top - margin.bottom;
+
+              // Create SVG element
+              const svg = d3
+                      .select("#points_chart")
+                      .append("svg")
+                      .attr("width", width)
+                      .attr("height", height)
+                      .append("g")
+                      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+              // Set up scales
+              const xScale = d3.scaleBand().range([0, innerWidth]).padding(0.1);
+              const yScale = d3.scaleLinear().range([innerHeight, 0]);
+
+              // Define the line
+              const line = d3
+                      .line()
+                      .x((d) => xScale(d.year) + xScale.bandwidth() / 2)
+                      .y((d) => yScale(d.points));
+
+              // Add x-axis
+              svg
+                      .append("g")
+                      .attr("class", "x-axis")
+                      .attr("transform", `translate(0, ${innerHeight})`);
+
+              // Add y-axis
+              svg.append("g").attr("class", "y-axis");
+
+              // X-axis label
+              svg.append("text")
+                      .attr("class", "axis-label")
+                      .attr("x", width / 2)
+                      .attr("y", height + margin.top  - 20)
+                      .attr("text-anchor", "middle")
+                      .text("Year");
+
+              // Y-axis label
+              svg.append("text")
+                      .attr("class", "axis-label")
+                      .attr("x", -height / 2)
+                      .attr("y", -margin.left + 20)
+                      .attr("text-anchor", "middle")
+                      .attr("transform", "rotate(-90)")
+                      .text("Points");
+
+              // Add tooltip
+              const tooltip = d3
+                      .select("body")
+                      .append("div")
+                      .attr("class", "tooltip");
+
+              function initChart() {
+                const driverId1 = "1";
+                const driverId2 = "830";
+
+                const driver1PointsByYear = getPointsByYear(driverId1);
+                const driver2PointsByYear = getPointsByYear(driverId2);
+
+                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver1PointsByYear[year],
+                  driver: 1,
+                }));
+
+                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver2PointsByYear[year],
+                  driver: 2,
+                }));
+
+                const data = driver1Data.concat(driver2Data);
+
+                // Sort the data by year in ascending order
+                data.sort((a, b) => a.year - b.year);
+
+                // Update x-scale domain
+                xScale.domain(data.map((d) => d.year));
+
+                // Update y-scale domain
+                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                // Update x-axis
+                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                // Update y-axis
+                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                // Remove any existing lines
+                svg.selectAll(".line").remove();
+
+                // Add the line for driver 1
+                svg.append("path")
+                        .datum(driver1Data)
+                        .attr("class", "line line1")
+                        .attr("fill", "none")
+                        .attr("stroke", "#377eb8")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .each(function () {
+                          const path = d3.select(this);
+                          const totalLength = path.node().getTotalLength();
+
+                          path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                  .attr("stroke-dashoffset", totalLength)
+                                  .transition()
+                                  .duration(2000)
+                                  .attr("stroke-dashoffset", 0);
+                        });
+
+                // Add the line for driver 2 with line drawing animation
+                svg.append("path")
+                        .datum(driver2Data)
+                        .attr("class", "line line2")
+                        .attr("fill", "none")
+                        .attr("stroke", "#e41a1c")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .each(function () {
+                          const path = d3.select(this);
+                          const totalLength = path.node().getTotalLength();
+
+                          path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                  .attr("stroke-dashoffset", totalLength)
+                                  .transition()
+                                  .duration(2000)
+                                  .attr("stroke-dashoffset", 0);
+                        });
+
+                // Remove any existing dots
+                svg.selectAll(".dot").remove();
+
+                // Add the dots for each data point
+                svg
+                        .selectAll(".dot")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "dot")
+                        .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                        .attr("cy", (d) => yScale(d.points))
+                        .attr("r", 4)
+                        .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                        .on("mouseover", (event, d) => {
+                          tooltip
+                                  .style("display", "block")
+                                  .style("left", event.pageX + 10 + "px")
+                                  .style("top", event.pageY - 10 + "px")
+                                  .html(`Year: ${d.year}<br/>Points: ${d.points}`);
+                        })
+                        .on("mouseout", () => {
+                          tooltip.style("display", "none");
+                        });
+              }
+
+              // Function to update the chart based on selected drivers
+              function updateChart() {
+                const driverId1 = driverSelect1.value;
+                const driverId2 = driverSelect2.value;
+
+                const driver1PointsByYear = getPointsByYear(driverId1);
+                const driver2PointsByYear = getPointsByYear(driverId2);
+
+                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver1PointsByYear[year],
+                  driver: 1,
+                }));
+
+                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver2PointsByYear[year],
+                  driver: 2,
+                }));
+
+                const data = driver1Data.concat(driver2Data);
+
+                // Sort the data by year in ascending order
+                data.sort((a, b) => a.year - b.year);
+
+                // Update x-scale domain
+                xScale.domain(data.map((d) => d.year));
+
+                // Update y-scale domain
+                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                // Update x-axis
+                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                // Update y-axis
+                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                // Remove any existing lines
+                svg.selectAll(".line").remove();
+
+                // Add the line for driver 1
+                svg.append("path")
+                        .datum(driver1Data)
+                        .attr("class", "line line1")
+                        .attr("fill", "none")
+                        .attr("stroke", "#377eb8")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .each(function () {
+                          const path = d3.select(this);
+                          const totalLength = path.node().getTotalLength();
+
+                          path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                  .attr("stroke-dashoffset", totalLength)
+                                  .transition()
+                                  .duration(2000)
+                                  .attr("stroke-dashoffset", 0);
+                        });
+
+                // Add the line for driver 2 with line drawing animation
+                svg.append("path")
+                        .datum(driver2Data)
+                        .attr("class", "line line2")
+                        .attr("fill", "none")
+                        .attr("stroke", "#e41a1c")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .each(function () {
+                          const path = d3.select(this);
+                          const totalLength = path.node().getTotalLength();
+
+                          path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                  .attr("stroke-dashoffset", totalLength)
+                                  .transition()
+                                  .duration(2000)
+                                  .attr("stroke-dashoffset", 0);
+                        });
+
+                // Remove any existing dots
+                svg.selectAll(".dot").remove();
+
+                // Add the dots for each data point
+                svg
+                        .selectAll(".dot")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "dot")
+                        .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                        .attr("cy", (d) => yScale(d.points))
+                        .attr("r", 4)
+                        .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                        .on("mouseover", (event, d) => {
+                          tooltip
+                                  .style("display", "block")
+                                  .style("left", event.pageX + 10 + "px")
+                                  .style("top", event.pageY - 10 + "px")
+                                  .html(`Year: ${d.year}<br/>Points: ${d.points}`);
+                        })
+                        .on("mouseout", () => {
+                          tooltip.style("display", "none");
+                        });
+              }
+
+              setTimeout(function() {
+                // Initialize the chart with default drivers
+                initChart();
+              }, 2000);
+
+              // Listen for change in driver selection
+              const driverSelect1 = document.getElementById("driverSelect1");
+              const driverSelect2 = document.getElementById("driverSelect2");
+
+              driverSelect1.addEventListener("change", updateChart);
+
+              // driverSelect1.addEventListener("change", function () {
+              //     const selectedDriver1 = parseInt(driverSelect1.value);
+              //     const selectedDriver2 = parseInt(driverSelect2.value);
+              //     updateChart(selectedDriver1, selectedDriver2);
+              // });
+
+              driverSelect2.addEventListener("change", updateChart);
+
+              // driverSelect2.addEventListener("change", function () {
+              //     const selectedDriver1 = parseInt(driverSelect1.value);
+              //     const selectedDriver2 = parseInt(driverSelect2.value);
+              //     updateChart(selectedDriver1, selectedDriver2);
+              // });
+            },
+          });
+        },
+      });
+    },
+  });
+</script>
+
+<!-- Most Fastest Laps by Season -->
+<script>
+  // Load the CSV data using PapaParse
+  Papa.parse("assets/data/csv/drivers.csv", {
+    header: true,
+    download: true,
+    complete: function (driversData) {
+      // Store the drivers data in an object for easy access
+      const drivers = driversData.data.reduce((acc, driver) => {
+        acc[driver.driverId] = driver.forename + " " + driver.surname;
+        return acc;
+      }, {});
+
+      // Load the race data
+      Papa.parse("assets/data/csv/races.csv", {
+        header: true,
+        download: true,
+        complete: function (racesData) {
+          // Store the races data in an object for easy access
+          const races = racesData.data.reduce((acc, race) => {
+            acc[race.raceId] = race.year;
+            return acc;
+          }, {});
+
+          // Load the result data
+          Papa.parse("assets/data/csv/results.csv", {
+            header: true,
+            download: true,
+            complete: function (resultsData) {
+              // Function to count rank 1 finishes by year for a driver
+              function countRank1ByYear(driverId) {
+                const rank1CountByYear = {};
+
+                // Filter results based on driver ID and rank 1
+                const driverResults = resultsData.data.filter(
+                        (result) => result.driverId === driverId && result.rank === "1"
+                );
+
+                // Count rank 1 finishes by year
+                driverResults.forEach((result) => {
+                  const raceYear = races[result.raceId];
+
+                  if (rank1CountByYear[raceYear]) {
+                    rank1CountByYear[raceYear] += 1;
+                  } else {
+                    rank1CountByYear[raceYear] = 1;
+                  }
+                });
+
+                return rank1CountByYear;
+              }
+
+              // Set up dimensions
+              const width = 800;
+              const height = 300;
+              const margin = { top: 10, right: 20, bottom: 40, left: 80 };
+              const innerWidth = width - margin.left - margin.right;
+              const innerHeight = height - margin.top - margin.bottom;
+
+              // Create SVG element
+              const svg = d3
+                      .select("#laps_chart")
+                      .append("svg")
+                      .attr("width", width)
+                      .attr("height", height)
+                      .append("g")
+                      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+              // Set up scales
+              const xScale = d3.scaleBand().range([0, innerWidth]).padding(0.1);
+              const yScale = d3.scaleLinear().range([innerHeight, 0]);
+
+              // Define the line
+              const line = d3
+                      .line()
+                      .x((d) => xScale(d.year) + xScale.bandwidth() / 2)
+                      .y((d) => yScale(d.points));
+
+              // Add x-axis
+              svg
+                      .append("g")
+                      .attr("class", "x-axis")
+                      .attr("transform", `translate(0, ${innerHeight})`);
+
+              // Add y-axis
+              svg.append("g").attr("class", "y-axis");
+
+              // X-axis label
+              svg.append("text")
+                      .attr("class", "axis-label")
+                      .attr("x", width / 2)
+                      .attr("y", height + margin.top  - 20)
+                      .attr("text-anchor", "middle")
+                      .text("Year");
+
+              // Y-axis label
+              svg.append("text")
+                      .attr("class", "axis-label")
+                      .attr("x", -height / 2)
+                      .attr("y", -margin.left + 55)
+                      .attr("text-anchor", "middle")
+                      .attr("transform", "rotate(-90)")
+                      .text("Fastest Lap");
+
+              const tooltip = d3
+                      .select("body")
+                      .append("div")
+                      .attr("class", "tooltip");
+
+              function initChart2() {
+                const driverId1 = "1";
+                const driverId2 = "830";
+
+                const driver1PointsByYear = countRank1ByYear(driverId1);
+                const driver2PointsByYear = countRank1ByYear(driverId2);
+
+                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver1PointsByYear[year],
+                  driver: 1,
+                }));
+
+                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver2PointsByYear[year],
+                  driver: 2,
+                }));
+
+                const data = driver1Data.concat(driver2Data);
+
+                // Sort the data by year in ascending order
+                data.sort((a, b) => a.year - b.year);
+
+                // Update x-scale domain
+                xScale.domain(data.map((d) => d.year));
+
+                // Update y-scale domain
+                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                // Update x-axis
+                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                // Update y-axis
+                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                // Remove any existing lines
+                svg.selectAll(".line").remove();
+
+                // Add the line for driver 1
+                svg.append("path")
+                        .datum(driver1Data)
+                        .attr("class", "line line1")
+                        .attr("fill", "none")
+                        .attr("stroke", "#377eb8")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .call(animateLine);
+
+                // Add the line for driver 2 with line drawing animation
+                svg.append("path")
+                        .datum(driver2Data)
+                        .attr("class", "line line2")
+                        .attr("fill", "none")
+                        .attr("stroke", "#e41a1c")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .call(animateLine);
+
+                // Function to animate the line drawing
+                function animateLine(path) {
+                  const totalLength = path.node().getTotalLength();
+
+                  path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                          .attr("stroke-dashoffset", totalLength)
+                          .transition()
+                          .duration(2000)
+                          .ease(d3.easeLinear)
+                          .attr("stroke-dashoffset", 0);
+                }
+
+                // Remove any existing dots
+                svg.selectAll(".dot").remove();
+
+                // Add the dots for each data point
+                svg
+                        .selectAll(".dot")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "dot")
+                        .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                        .attr("cy", (d) => yScale(d.points))
+                        .attr("r", 4)
+                        .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                        .on("mouseover", (event, d) => {
+                          tooltip
+                                  .style("display", "block")
+                                  .style("left", event.pageX + 10 + "px")
+                                  .style("top", event.pageY - 10 + "px")
+                                  .html(`Year: ${d.year}<br/>Fastest Lap: ${d.points}`);
+                        })
+                        .on("mouseout", () => {
+                          tooltip.style("display", "none");
+                        });
+              }
+
+              // Function to update the chart based on selected drivers
+              function updateChart2() {
+                const driverId1 = driverSelect1.value;
+                const driverId2 = driverSelect2.value;
+
+                const driver1PointsByYear = countRank1ByYear(driverId1);
+                const driver2PointsByYear = countRank1ByYear(driverId2);
+
+                const driver1Data = Object.keys(driver1PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver1PointsByYear[year],
+                  driver: 1,
+                }));
+
+                const driver2Data = Object.keys(driver2PointsByYear).map((year) => ({
+                  year: year,
+                  points: driver2PointsByYear[year],
+                  driver: 2,
+                }));
+
+                const data = driver1Data.concat(driver2Data);
+
+                // Sort the data by year in ascending order
+                data.sort((a, b) => a.year - b.year);
+
+                // Update x-scale domain
+                xScale.domain(data.map((d) => d.year));
+
+                // Update y-scale domain
+                yScale.domain([0, d3.max(data, (d) => d.points)]);
+
+                // Update x-axis
+                svg.select(".x-axis").call(d3.axisBottom(xScale));
+
+                // Update y-axis
+                svg.select(".y-axis").call(d3.axisLeft(yScale));
+
+                // Remove any existing lines
+                svg.selectAll(".line").remove();
+
+                // Add the line for driver 1
+                svg.append("path")
+                        .datum(driver1Data)
+                        .attr("class", "line line1")
+                        .attr("fill", "none")
+                        .attr("stroke", "#377eb8")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .call(animateLine);
+
+                // Add the line for driver 2 with line drawing animation
+                svg.append("path")
+                        .datum(driver2Data)
+                        .attr("class", "line line2")
+                        .attr("fill", "none")
+                        .attr("stroke", "#e41a1c")
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        .call(animateLine);
+
+                // Function to animate the line drawing
+                function animateLine(path) {
+                  const totalLength = path.node().getTotalLength();
+
+                  path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                          .attr("stroke-dashoffset", totalLength)
+                          .transition()
+                          .duration(2000)
+                          .ease(d3.easeLinear)
+                          .attr("stroke-dashoffset", 0);
+                }
+
+                // Remove any existing dots
+                svg.selectAll(".dot").remove();
+
+                // Add the dots for each data point
+                svg
+                        .selectAll(".dot")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "dot")
+                        .attr("cx", (d) => xScale(d.year) + xScale.bandwidth() / 2)
+                        .attr("cy", (d) => yScale(d.points))
+                        .attr("r", 4)
+                        .attr("fill", (d) => (d.driver === 1 ? "#377eb8" : "#e41a1c"))
+                        .on("mouseover", (event, d) => {
+                          tooltip
+                                  .style("display", "block")
+                                  .style("left", event.pageX + 10 + "px")
+                                  .style("top", event.pageY - 10 + "px")
+                                  .html(`Year: ${d.year}<br/>Fastest Lap: ${d.points}`);
+                        })
+                        .on("mouseout", () => {
+                          tooltip.style("display", "none");
+                        });
+              }
+
+              setTimeout(function() {
+                // Initialize the chart with default drivers
+                initChart2();
+              }, 2000);
+
+              // Listen for change in driver selection
+              const driverSelect1 = document.getElementById("driverSelect1");
+              const driverSelect2 = document.getElementById("driverSelect2");
+
+              driverSelect1.addEventListener("change", updateChart2);
+
+              // driverSelect1.addEventListener("change", function () {
+              //     const selectedDriver1 = parseInt(driverSelect1.value);
+              //     const selectedDriver2 = parseInt(driverSelect2.value);
+              //     updateChart2(selectedDriver1, selectedDriver2);
+              // });
+
+              driverSelect2.addEventListener("change", updateChart2);
+
+              // driverSelect2.addEventListener("change", function () {
+              //     const selectedDriver1 = parseInt(driverSelect1.value);
+              //     const selectedDriver2 = parseInt(driverSelect2.value);
+              //     updateChart2(selectedDriver1, selectedDriver2);
+              // });
+            },
+          });
+        },
+      });
+    },
+  });
+</script>
+
+<!-- End -->
+
+</body>
+
+</html>
