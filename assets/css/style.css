@@ -76,13 +76,6 @@ body {
     margin-left: 50px;
 }
 
-.footer_logo_right {
-    width: 50px;
-    height: auto;
-    margin-right: 50px;
-    margin-left: 25px;
-}
-
 .footer_center {
     flex: 1;
     justify-content: center;
@@ -97,8 +90,14 @@ body {
     align-items: center;
 }
 
-#noot,
-#f1_footer {
+.footer_logo_right {
+    width: 50px;
+    height: auto;
+    margin-right: 50px;
+    margin-left: 25px;
+}
+
+#noot, #f1_footer {
     cursor: pointer;
 }
 
