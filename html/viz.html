@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/d3-zoom.v3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
 
     <style>
         @font-face {
@@ -55,6 +56,10 @@
 <div id="con_chart"></div>
 
 <div id="tooltip" style="position: absolute; opacity: 0;"></div>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+<div id="tooltip_word" style="position: absolute; opacity: 0; pointer-events: none;"></div>
 
 <div id="footer">
     <p>2023 | On The Inside | Presented to you by Arif & Shuhail</p>
@@ -141,102 +146,301 @@
         });
     }
 
-    function updateChart(chartContainerId) {
+//     function updateChart(chartContainerId) {
+//
+//         const circuitData = csvData["circuits.csv"];
+//         const raceData = csvData["races.csv"];
+//         const constructorData = csvData["constructors.csv"];
+//         const constructorStandingsData = csvData["constructor_standings.csv"];
+//         const constructorResultsData = csvData["constructor_results.csv"];
+//
+//         // Prepare the data for the chart
+//         const chartData = [];
+//
+//         constructorStandingsData.forEach(function(d) {
+//             const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+//
+//             if (constructor !== undefined && constructor !== null) {
+//                 const race = raceData.find(race => race.raceId === d.raceId);
+//                 const circuit = circuitData.find(circuit => circuit.circuitId === race.circuitId);
+//
+//                 chartData.push({
+//                     country: circuit.country,
+//                     constructor: constructor.name,
+//                     points: +d.points
+//                 });
+//             }
+//
+//         });
+//
+//         console.log(chartData);
+//
+//         // Set up the chart dimensions
+//         const margin = { top: 50, right: 50, bottom: 50, left: 250 };
+//         const width = 1500 - margin.left - margin.right;
+//         const height = 1000 - margin.top - margin.bottom;
+//
+//         // Create the SVG container
+//         const svg = d3.select("#" + chartContainerId)
+//             .append("svg")
+//             .attr("width", width + margin.left + margin.right)
+//             .attr("height", height + margin.top + margin.bottom)
+//             .append("g")
+//             .attr("transform", `translate(${margin.left},${margin.top})`);
+//
+//         // Group the data by constructor and country
+//         const nestedData = Array.from(d3.group(chartData, d => d.constructor, d => d.country));
+//
+// // Define the unique constructors and countries
+//         const constructors = Array.from(new Set(chartData.map(d => d.constructor)));
+//         const countries = Array.from(new Set(chartData.map(d => d.country)));
+//
+// // Define the color scale for constructors
+//         const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(constructors);
+//
+// // Calculate the maximum points across all constructors
+//         const maxPoints = d3.max(chartData, d => d.points);
+//
+// // Define the scales
+//         const xScale = d3.scaleLinear()
+//             .domain([0, maxPoints])
+//             .range([0, width]);
+//
+//         const yScale = d3.scaleBand()
+//             .domain(countries)
+//             .range([0, height])
+//             .padding(0.1);
+//
+// // Create the stacked bar chart
+//         svg.selectAll(".bar")
+//             .data(nestedData)
+//             .enter()
+//             .append("g")
+//             .attr("fill", d => colorScale(d[0]))
+//             .selectAll("rect")
+//             .data(d => d[1])
+//             .enter()
+//             .append("rect")
+//             .attr("class", "bar")
+//             .attr("x", 0)
+//             .attr("y", d => yScale(d[0]))
+//             .attr("width", d => xScale(d[1].points))
+//             .attr("height", yScale.bandwidth());
+//
+// // Add the x-axis
+//         svg.append("g")
+//             .attr("class", "x-axis")
+//             .attr("transform", `translate(0, ${height})`)
+//             .call(d3.axisBottom(xScale));
+//
+// // Add the y-axis
+//         svg.append("g")
+//             .attr("class", "y-axis")
+//             .call(d3.axisLeft(yScale));
+//
+//     }
 
-        const circuitData = csvData["circuits.csv"];
-        const raceData = csvData["races.csv"];
+    // setTimeout(function() {
+    //     updateChart("con_chart");
+    // }, 1000);
+
+</script>
+
+<script>
+
+    function updateWordCloud() {
+
+        const qualifyingData = csvData["qualifying.csv"];
         const constructorData = csvData["constructors.csv"];
         const constructorStandingsData = csvData["constructor_standings.csv"];
-        const constructorResultsData = csvData["constructor_results.csv"];
 
         // Prepare the data for the chart
-        const chartData = [];
+        const pointsData = {};
+        const winData = {};
+        const podiumData = {};
+        const poleData = {};
 
         constructorStandingsData.forEach(function(d) {
             const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
 
             if (constructor !== undefined && constructor !== null) {
-                const race = raceData.find(race => race.raceId === d.raceId);
-                const circuit = circuitData.find(circuit => circuit.circuitId === race.circuitId);
+                const constructorName = constructor.name;
+                const points = +d.points;
 
-                chartData.push({
-                    country: circuit.country,
-                    constructor: constructor.name,
-                    points: +d.points
-                });
+                if (pointsData.hasOwnProperty(constructorName)) {
+                    pointsData[constructorName] += points; // Add points to the existing constructor
+                } else {
+                    pointsData[constructorName] = points; // Initialize points for a new constructor
+                }
             }
 
         });
 
-        console.log(chartData);
+        const constructorsWordCloudData = Object.entries(pointsData).map(([constructorName, points]) => {
+            return { word: constructorName, size: parseFloat(points).toString() };
+        });
 
-        // Set up the chart dimensions
-        const margin = { top: 50, right: 50, bottom: 50, left: 250 };
-        const width = 1500 - margin.left - margin.right;
-        const height = 1000 - margin.top - margin.bottom;
+        const constructorWinData = constructorStandingsData.filter(function (result) {
+            return result.position === 1;
+        })
 
-        // Create the SVG container
-        const svg = d3.select("#" + chartContainerId)
-            .append("svg")
+        constructorWinData.forEach(function(d) {
+            const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+
+            if (constructor !== undefined && constructor !== null) {
+                const constructorName = constructor.name;
+
+                if (winData.hasOwnProperty(constructorName)) {
+                    winData[constructorName]++; // Increment the number of poles for an existing constructor
+                } else {
+                    winData[constructorName] = 1; // Initialize the number of poles for a new constructor
+                }
+            }
+
+        });
+
+        const constructorPodiumData = constructorStandingsData.filter(function (result) {
+            return result.position <= 3;
+        });
+
+        constructorPodiumData.forEach(function(d) {
+            const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+
+            if (constructor !== undefined && constructor !== null) {
+                const constructorName = constructor.name;
+
+                if (podiumData.hasOwnProperty(constructorName)) {
+                    podiumData[constructorName]++; // Increment the number of poles for an existing constructor
+                } else {
+                    podiumData[constructorName] = 1; // Initialize the number of poles for a new constructor
+                }
+            }
+
+        });
+
+        const constructorPoleData = qualifyingData.filter(function (result) {
+            return result.position === 1;
+        });
+
+        constructorPoleData.forEach(function(d) {
+            const constructor = constructorData.find(constructor => constructor.constructorId === d.constructorId);
+
+            if (constructor !== undefined && constructor !== null) {
+                const constructorName = constructor.name;
+
+                if (poleData.hasOwnProperty(constructor.name)) {
+                    poleData[constructorName]++; // Increment the number of poles for an existing constructor
+                } else {
+                    poleData[constructorName] = 1; // Initialize the number of poles for a new constructor
+                }
+            }
+
+        });
+
+        // Define the input range of values
+        const inputRange = [0, d3.max(constructorsWordCloudData, d => d.size)]; // Assuming `size` is the property containing the original values
+
+        // Define the output range of sizes
+        const outputRange = [15, 150]; // Adjust the values as per your desired size range
+
+        // Create the linear scale
+        const sizeScale = d3.scaleLinear()
+            .domain(inputRange)
+            .range(outputRange);
+
+        // set the dimensions and margins of the graph
+        const margin = {top: 10, right: 10, bottom: 10, left: 10},
+            width = 1000 - margin.left - margin.right,
+            height = 750 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        const svg = d3.select("#my_dataviz").append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
 
-        // Group the data by constructor and country
-        const nestedData = Array.from(d3.group(chartData, d => d.constructor, d => d.country));
+        // Constructs a new cloud layout instance. It run an algorithm to find the position of words that suits your requirements
+        // Wordcloud features that are different from one word to the other must be here
+        const layout = d3.layout.cloud()
+            .size([width, height])
+            .words(constructorsWordCloudData.map(function(d) {
+                return {text: d.word, size:d.size}; }))
+            .padding(5)        //space between words
+            .rotate(function() { return ~~(Math.random() * 2) * 90; })
+            .fontSize(function(d) { return sizeScale(d.size); })      // font size of words
+            .on("end", draw);
+        layout.start();
 
-// Define the unique constructors and countries
-        const constructors = Array.from(new Set(chartData.map(d => d.constructor)));
-        const countries = Array.from(new Set(chartData.map(d => d.country)));
+        // This function takes the output of 'layout' above and draw the words
+        // Wordcloud features that are THE SAME from one word to the other can be here
+        function draw(words) {
+            const tooltip = d3
+                .select("#tooltip_word") // Select the tooltip element
+                .style("background-color", "white") // Set the background color to white
+                .style("border", "1px solid black") // Add a border
+                .style("padding", "5px") // Add padding
+                .style("opacity", 0); // Hide the tooltip initially
 
-// Define the color scale for constructors
-        const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(constructors);
+            svg
+                .append("g")
+                .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+                .selectAll("text")
+                .data(words)
+                .enter()
+                .append("text")
+                .style("font-size", function(d) { return d.size; })
+                .style("fill", function (d, i) {
+                    if (i < 5) {
+                        return "red";
+                    } else {
+                        return "#377eb8";
+                    }
+                })
+                .style("text-shadow", function (d, i) {
+                    if (i < 5) {
+                        return "2px 2px 4px rgba(0, 0, 0, 0.3)";
+                    } else {
+                        return "none";
+                    }
+                })
+                .attr("text-anchor", "middle")
+                .style("font-family", "Impact")
+                .attr("transform", function(d) {
+                    return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                })
+                .text(function(d) { return d.text; })
+                .on("mouseover", function(event, d) {
 
-// Calculate the maximum points across all constructors
-        const maxPoints = d3.max(chartData, d => d.points);
+                    const points = pointsData[d.text] ?? 0;
+                    const wins = winData[d.text] ?? 0;
+                    const podiums = podiumData[d.text] ?? 0;
+                    const poles = poleData[d.text] ?? 0;
 
-// Define the scales
-        const xScale = d3.scaleLinear()
-            .domain([0, maxPoints])
-            .range([0, width]);
-
-        const yScale = d3.scaleBand()
-            .domain(countries)
-            .range([0, height])
-            .padding(0.1);
-
-// Create the stacked bar chart
-        svg.selectAll(".bar")
-            .data(nestedData)
-            .enter()
-            .append("g")
-            .attr("fill", d => colorScale(d[0]))
-            .selectAll("rect")
-            .data(d => d[1])
-            .enter()
-            .append("rect")
-            .attr("class", "bar")
-            .attr("x", 0)
-            .attr("y", d => yScale(d[0]))
-            .attr("width", d => xScale(d[1].points))
-            .attr("height", yScale.bandwidth());
-
-// Add the x-axis
-        svg.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", `translate(0, ${height})`)
-            .call(d3.axisBottom(xScale));
-
-// Add the y-axis
-        svg.append("g")
-            .attr("class", "y-axis")
-            .call(d3.axisLeft(yScale));
+                    tooltip.transition().duration(200).style("opacity", 0.9); // Show tooltip on mouseover
+                    tooltip
+                        .html(`
+                            <strong>Constructor: </strong>${d.text}<br>
+                            <strong>Total Points: </strong>${points}<br>
+                            <strong>Wins: </strong>${wins}<br>
+                            <strong>Podiums: </strong>${podiums}<br>
+                            <strong>Poles: </strong>${poles}
+                            `
+                        )
+                        .style("left", event.pageX + "px") // Set tooltip left position based on mouse event
+                        .style("top", event.pageY + "px") // Set tooltip top position based on mouse event
+                        .style("transform", "translate(-50%, 0)"); // Adjust position to center horizontally
+                })
+                .on("mouseout", function() {
+                    tooltip.transition().duration(200).style("opacity", 0); // Hide tooltip on mouseout
+                });
+        }
 
     }
 
     setTimeout(function() {
-        updateChart("con_chart");
+        updateWordCloud("con_chart");
     }, 1000);
 
 </script>
